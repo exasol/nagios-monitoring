@@ -1,0 +1,29 @@
+#!/bin/bash
+filename="/etc/lighttpd/certificates/server";
+domainname="";
+if hostname -f &>/dev/null && [ "$(hostname -f)" != "localhost" ]; then
+    domainname="$(hostname -f)";
+else
+    domainname="$(hostname -s)";
+fi;
+subject="
+commonName=${domainname}";
+
+if [ ! -f "${filename}.pem" ]; then 
+	openssl genrsa -out "${filename}.priv" 4096 &&
+	openssl rsa -in "${filename}.priv" -pubout -out "${filename}.pub" &&
+	openssl req -new -subj "$(tr '\n' '/' <<< "$subject")" -batch -key "${filename}.priv" -out "${filename}.csr" &&
+	openssl x509 -req -days 4096 -in "${filename}.csr" -signkey "${filename}.priv" -out "${filename}.cert" &&
+	openssl pkcs12 -export -in "${filename}.cert" -inkey "${filename}.priv" -out "${filename}.p12" -password pass:'' &&
+	chmod 600 "${filename}.priv" &&
+	chmod 600 "${filename}.p12" &&
+	chmod 644 "${filename}.csr" &&
+	chmod 644 "${filename}.cert" &&
+	chmod 644 "${filename}.pub" &&
+	cat "${filename}.priv" "${filename}.cert" > "${filename}.pem" &&
+	chmod 600 "${filename}.priv" &&
+	chown -v www-data:www-data "${filename}".* &&
+	ln -fs "${filename}.pem" "/etc/lighttpd/server.pem" &&
+	lighty-enable-mod ssl
+fi;
+

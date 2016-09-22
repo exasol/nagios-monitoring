@@ -1,0 +1,221 @@
+#!/usr/bin/python
+import xmlrpclib, ssl, json, re, readline
+from os         import sep
+from sys        import exit, argv, version_info, stdout, stderr
+from getpass    import getpass
+from urllib     import quote_plus
+from xmlrpclib  import ServerProxy
+from subprocess import Popen, PIPE, STDOUT
+
+numberPattern =         re.compile(r'^\d+$')
+ipStringPattern =       re.compile(r'^[0-9,.]+$')
+ip4RangePattern =       re.compile(r'^(\d+\.\d+\.\d+)\.(\d+)\.\.(\d+)')
+ipPattern =             re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+clusterNamePattern =    re.compile(r'^[A-Za-z0-9]+$')
+
+def validatedInput(pattern, text):
+    value = raw_input(text).strip()
+    if pattern.match(value):
+        return value
+    else:
+        return validatedInput(pattern, text)
+
+def XmlRpcCall(userName, password, hostName, urlPath = ''):
+    url = 'https://%s:%s@%s/cluster1%s' % (quote_plus(userName), quote_plus(password), hostName, urlPath)
+    if hasattr(ssl, 'SSLContext'):
+        sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+        sslcontext.verify_mode = ssl.CERT_NONE
+        sslcontext.check_hostname = False
+        return ServerProxy(url, context=sslcontext)
+    return ServerProxy(url)
+
+def ConvertIpString(ipString):
+    ipString = re.sub('[^0-9,.]+', '', ipString)
+    ipItems = []
+    for ipRange in ipString.split(','):
+        if not '..' in ipRange: #not a range, just an single IP
+            ipItems.append(ipRange)
+        else:
+            match = ip4RangePattern.match(ipRange)
+            for i in range(int(match.group(2)), int(match.group(3)) + 1):
+                ipItems.append('%s.%i' % (match.group(1), i))
+    ipItems.sort()
+    return ipItems
+
+licenseServerIp = exaOperationUser = exaOperationPasswd = ''
+cluster = None
+clusterNodes = 0
+abortWizard = False
+clusterNodeIps = []
+configurationString = ''
+logServiceId = 0
+databaseDict = {}
+
+while clusterNodes == 0 and not abortWizard:
+    try:
+        clusterName     =       validatedInput(clusterNamePattern, 'Cluster name [A-Za-z0-9]: ')
+        licenseServerIp =       validatedInput(ipPattern, 'License server IP address: ')
+        exaOperationUser =      raw_input('EXAoperation user (must have at least the supervisor role): ')
+        exaOperationPasswd =    getpass('EXAoperation password: ')
+        logServiceId =          int(validatedInput(numberPattern, 'Logservice number: '))
+        clusterNodeIps =        ConvertIpString(validatedInput(ipStringPattern, 'IP addresses of all cluster nodes (connection range): '))
+
+        cluster = XmlRpcCall(exaOperationUser, exaOperationPasswd, licenseServerIp, '/')
+        logService = XmlRpcCall(exaOperationUser, exaOperationPasswd, licenseServerIp, '/logservice%i' % logServiceId)
+        print('\n*** trying to connect...')
+        clusterNodes = len(cluster.getNodeList())
+        logService.logEntries()
+
+        for ip in clusterNodeIps:
+            proc = Popen(['nc', '-zw3', ip, '443'], stdout=PIPE, stderr=STDOUT)
+            if proc.wait() != 0:
+                clusterNodes = 0
+                raise Exception('%s is not reachable' % ip)
+    
+    except Exception as e:
+        print('*** not able to connect (%s)' % e)
+        abortWizard = raw_input('Do you want to try again? (Y/n) ').lower().strip() == 'n'
+        print('\n')
+
+if abortWizard:
+    exit(1)
+
+
+for dbName in cluster.getDatabaseList():
+    if raw_input('Do you want to monitor the database instance "%s"? (Y/n)' % dbName).lower().strip() != 'n':
+        skipInstance = False
+        while not skipInstance:
+            username = raw_input('Database monitoring user: ')
+            password = getpass('Password: ')
+            database = XmlRpcCall(exaOperationUser, exaOperationPasswd, licenseServerIp, '/db_' + dbName)
+            try:
+                database.getDatabaseStatistics(username, password)
+                databaseDict[dbName] = { 
+                    'password' : password,
+                    'username' : username
+                }
+                skipInstance = True
+            except:
+                print('\n*** database login failed - Please check your credentials and if DB is up and running')
+                skipInstance = raw_input('Do you want to try again? (Y/n) ').lower().strip() == 'n'
+                print('\n')
+
+
+
+configurationString += """define hostgroup {{
+    hostgroup_name              {ClusterName}
+    alias                       {ClusterName} Cluster
+}}
+
+define host{{
+    use                         generic-host
+    hostgroups                  {ClusterName}
+    name                        {ClusterName}
+    _user                       {ExaOpUser}
+    _password                   {ExaOpPwd}
+    _logserviceId               {LogServiceId}
+    register                    0
+}}
+
+define host{{
+    use                         {ClusterName}
+    host_name                   {ClusterName}-license
+    alias                       {ClusterName} License
+    address                     {LicenseServerAddr}
+}}
+
+""".format(**{
+    'ClusterName'       : clusterName,
+    'ExaOpUser'         : exaOperationUser,
+    'ExaOpPwd'          : exaOperationPasswd,
+    'LogServiceId'      : logServiceId,
+    'LicenseServerAddr' : licenseServerIp
+})
+
+nodeIterator = 0
+for ip in clusterNodeIps:
+    nodeIterator += 1
+    configurationString += """define host{{
+    use                         {ClusterName}
+    host_name                   {ClusterName}-node{i}
+    alias                       {ClusterName} Node {i}
+    address                     {ip}
+}}
+
+""".format(**{
+        'ClusterName'       : clusterName,
+        'ip'                : ip,
+        'i'                 : nodeIterator
+    })
+
+configurationString += """define service{{
+        use                     exasol_nodes
+        host_name               {ClusterName}-license
+}}
+
+define service {{
+        use                     exasol_services
+        host_name               {ClusterName}-license
+}}
+
+define service{{
+        use                     exasol_logservice
+        host_name               {ClusterName}-license
+}}
+
+""".format(**{
+    'ClusterName'       : clusterName
+})
+
+configurationString +=  """define service{{
+        use                     exasol_ping
+        host_name               """
+for i in xrange(1, nodeIterator + 1):
+    configurationString += '%s-node%s,' % (clusterName, i)
+configurationString += '%s-license\n}\n' % (clusterName)
+
+configurationString +=  """define service{{
+        use                     exasol_exaoperationhttps
+        host_name               """
+for i in xrange(1, nodeIterator + 1):
+    configurationString += '%s-node%s,' % (clusterName, i)
+configurationString += '%s-license\n}\n' % (clusterName)
+
+
+for dbName in databaseDict.keys():
+    username = databaseDict[dbName]['username']
+    password = databaseDict[dbName]['password']
+    configurationString += """define service{{
+        use                     exasol_db_performance
+        host_name               {ClusterName}-license
+        name                    exasol_db_performance_{Database}
+        service_description     DB Performance {Database}
+        _database               {Database}
+        _dbuser                 {User}
+        _dbpassword             {Password}
+}}
+
+define service{{
+        use                     exasol_db_diskspace
+        host_name               {ClusterName}-license
+        name                    exasol_db_diskspace_{Database}
+        service_description     Free DB Space {Database}
+        _database               {Database}
+}}
+
+""".format(**{
+    'ClusterName'       : clusterName,
+    'Database'          : dbName,
+    'User'              : username,
+    'Password'          : password
+})
+
+configFilename = '/etc/nagios3/conf.d/exa_%s.cfg' % clusterName
+f = open(configFilename, 'w')
+f.write(configurationString)
+f.close()
+
+print("*** successfully created Nagios3 Configuration file '%s'" % configFilename)
+
+proc = Popen(['/etc/init.d/nagios3', 'reload'], stdout=PIPE, stderr=STDOUT)
+proc.wait()

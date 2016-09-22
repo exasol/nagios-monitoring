@@ -1,0 +1,8 @@
+#!/bin/bash -e
+(
+    find /etc/nagios3/conf.d -type f -iname 'exa*cfg' -print0; 
+    find /opt/exasol/monitoring -type f -print0
+)               |\
+xargs -0 tar c  |\
+gzip -9c        |\
+base64

@@ -1,0 +1,17 @@
+#!/bin/bash
+driverUrl='https://www.exasol.com/support/secure/attachment/42374/EXASolution_ODBC-5.0.15.tar.gz'
+md5Url='https://www.exasol.com/support/secure/attachment/42373/EXASolution_ODBC-5.0.15.tar.gz.md5'
+driverName="$(cut -d '/' -f8 <<< "$driverUrl")"
+md5Name="$(cut -d '/' -f8 <<< "$md5Url")"
+oldPwd="$PWD"
+
+if [ ! -d "/opt/exasol/EXASolution_ODBC-5.0.15" ]; then
+    echo "downloading and installing EXASOL ODBC driver..."
+    cd "/opt/exasol" &&
+    wget -nv "$driverUrl" &&
+    wget -nv "$md5Url"  &&
+    md5sum -c "$md5Name" &&
+    tar xf "$driverName" &&
+    rm -f "$driverName" "$md5Name" 
+    cd "$PWD"
+fi;

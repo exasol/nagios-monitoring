@@ -1,0 +1,12 @@
+#!/bin/bash
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
+generate-certificate
+download-odbc-driver
+service nagios3 start
+service npcd start
+service lighttpd start
+
+#don't close init process:
+while true; do sleep 60; done;
