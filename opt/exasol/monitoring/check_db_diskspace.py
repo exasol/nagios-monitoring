@@ -8,7 +8,6 @@ from getopt     import getopt
 from xmlrpclib  import ServerProxy
 
 pluginVersion               = "16.09"
-storagePartition            = 'd03_storage'
 tempUsageWarningTreshold    = 60.0 #percent
 tempUsageCriticalTreshold   = 80.0 #percent
 cacheDuration               = 3600 #seconds
@@ -128,6 +127,8 @@ try:
     #get volume and segment infos on the database instance
     databaseSegments = []
     databaseVolumeInfo = storage.getVolumeInfo(databaseVolume)
+    storagePartition = databaseVolumeInfo['disk']
+
     for redundancyLayer in range(0, databaseVolumeInfo['redundancy']):
         databaseSegments += databaseVolumeInfo['segments'][redundancyLayer]
 
