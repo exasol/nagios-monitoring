@@ -1,0 +1,8 @@
+#!/bin/bash -e
+echo -e "\nAvailable cluster configurations:"
+find /etc/nagios3/conf.d -iname 'exa_*.cfg' -exec basename {} \; 2>/dev/null    |\
+cut -d '_' -f2                                                                  |\
+cut -d '.' -f1                                                                  |\
+sort                                                                            |\
+sed 's/^/    /'                                                                 |\
+echo ""
