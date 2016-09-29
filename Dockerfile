@@ -1,4 +1,5 @@
 FROM debian:jessie
+MAINTAINER EXASOL AG
 
 # install packages
 ADD apt-proxy /etc/apt/apt.conf.d
