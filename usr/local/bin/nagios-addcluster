@@ -29,16 +29,18 @@ def XmlRpcCall(userName, password, hostName, urlPath = ''):
         return ServerProxy(url, context=sslcontext)
     return ServerProxy(url)
 
-def ConvertIpString(ipString):
+def ConvertIpString(ipString, licenseServerIp):
     ipString = re.sub('[^0-9,.]+', '', ipString)
     ipItems = []
     for ipRange in ipString.split(','):
         if not '..' in ipRange: #not a range, just an single IP
-            ipItems.append(ipRange)
+            if ipRange != licenseServerIp:
+                ipItems.append(ipRange)
         else:
             match = ip4RangePattern.match(ipRange)
             for i in range(int(match.group(2)), int(match.group(3)) + 1):
-                ipItems.append('%s.%i' % (match.group(1), i))
+                if i != licenseServerIp:
+                    ipItems.append('%s.%i' % (match.group(1), i))
     ipItems.sort()
     return ipItems
 
@@ -58,7 +60,7 @@ while clusterNodes == 0 and not abortWizard:
         exaOperationUser =      raw_input('EXAoperation user (must have at least the supervisor role): ')
         exaOperationPasswd =    getpass('EXAoperation password: ')
         logServiceId =          int(validatedInput(numberPattern, 'Logservice number: '))
-        clusterNodeIps =        ConvertIpString(validatedInput(ipStringPattern, 'IP addresses of all cluster nodes (connection range): '))
+        clusterNodeIps =        ConvertIpString(validatedInput(ipStringPattern, 'IP addresses of all cluster nodes (connection range): '), licenseServerIp)
 
         cluster = XmlRpcCall(exaOperationUser, exaOperationPasswd, licenseServerIp, '/')
         logService = XmlRpcCall(exaOperationUser, exaOperationPasswd, licenseServerIp, '/logservice%i' % logServiceId)
