@@ -2,6 +2,7 @@
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
+chmod u+s /bin/ping /bin/ping6
 generate-certificate
 download-odbc-driver
 service nagios3 start
