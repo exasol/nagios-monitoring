@@ -1,0 +1,2 @@
+#!/bin/bash -e
+htpasswd /etc/nagios3/htpasswd.users nagiosadmin

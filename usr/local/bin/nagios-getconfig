@@ -1,8 +1,21 @@
 #!/bin/bash -e
-(
-    find /etc/nagios3/conf.d -type f -iname 'exa*cfg' -print0; 
-    find /opt/exasol/monitoring -type f -print0
-)                               |\
-(xargs -0 tar c) 2>/dev/null    |\
-gzip -9c                        |\
-base64
+function generate_archive()
+{
+    (
+        find /etc/nagios3/conf.d -type f -iname 'exa*cfg' -print0; 
+        find /opt/exasol/monitoring -type f -print0
+    )                               |\
+    (xargs -0 tar c) 2>/dev/null    |\
+    gzip -9c                       
+}
+
+if [ ! -z "$SERVER_SOFTWARE" ]; then  #script is running as CGI
+
+    echo "Content-Type: application/gzip"
+    echo "Content-Disposition: attachment; filename=config.tar.gz"
+    echo ""
+    generate_archive
+else
+    generate_archive | base64
+fi;
+

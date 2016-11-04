@@ -5,7 +5,7 @@ MAINTAINER EXASOL AG
 ADD apt-proxy /etc/apt/apt.conf.d
 RUN bash -c 'echo "deb http://ftp.de.debian.org/debian/ jessie-backports main" >>/etc/apt/sources.list'
 RUN apt-get -y update
-RUN apt-get install -y nagios3 lighttpd php5-cgi pnp4nagios python-pyodbc odbcinst1debian2 netcat wget mutt
+RUN apt-get install -y nagios3 lighttpd php5-cgi pnp4nagios python-pyodbc odbcinst1debian2 netcat patch wget mutt
 
 # debug section
 RUN apt-get -y install vim less python3-dialog
@@ -14,6 +14,8 @@ RUN apt-get -y install vim less python3-dialog
 ADD etc/lighttpd/conf-available/10-nagios3.conf /etc/lighttpd/conf-available/
 RUN mkdir -p /etc/lighttpd/certificates
 RUN chown www-data:www-data /etc/lighttpd/certificates
+RUN chown www-data:www-data /var/www/html/cgi-bin
+RUN ln -s /usr/local/bin/nagios-getconfig /usr/lib/cgi-bin/nagios3/getconfig.cgi 
 RUN lighttpd-enable-mod cgi 
 RUN lighttpd-enable-mod auth 
 RUN lighttpd-enable-mod status
@@ -36,7 +38,6 @@ ADD var/www/html/index.php /var/www/html/index.php
 RUN /etc/init.d/nagios3 stop
 RUN dpkg-statoverride --update --add nagios www-data 2710 /var/lib/nagios3/rw
 RUN dpkg-statoverride --update --add nagios nagios 751 /var/lib/nagios3
-RUN /etc/init.d/nagios3 start
 
 # configure nagios setup and deploy plugins
 ADD opt/exasol/monitoring/* /opt/exasol/monitoring/
@@ -44,7 +45,10 @@ ADD etc/nagios3/conf.d/* etc/nagios3/conf.d/
 RUN sed -r 's# notify-service-by-email# exasol-notify-service-by-email#g' /etc/nagios3/conf.d/contacts_nagios2.cfg >/tmp/contacts_nagios2.cfg && mv -v /tmp/contacts_nagios2.cfg /etc/nagios3/conf.d/contacts_nagios2.cfg
 ADD usr/local /usr/local
 RUN chmod -v 755 /usr/local/bin/*
-RUN /etc/init.d/nagios3 force-reload
+
+# add further patches
+ADD opt/exasol/patches/* /opt/exasol/patches/
+RUN bash -c 'patch -p1 /usr/share/nagios3/htdocs/side.php < /opt/exasol/patches/nagios-downloadbutton.patch'
 
 # create entrypoint
 ADD etc/dockerinit /etc/
