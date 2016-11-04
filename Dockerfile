@@ -48,6 +48,8 @@ RUN chmod -v 755 /usr/local/bin/*
 # add further patches
 ADD opt/exasol/patches/* /opt/exasol/patches/
 RUN bash -c 'patch -p1 /usr/share/nagios3/htdocs/side.php < /opt/exasol/patches/nagios-downloadbutton.patch'
+RUN bash -c 'patch -l -p1 /etc/nagios3/stylesheets/common.css < /opt/exasol/patches/nagios-exasol-background.patch'
+RUN ln -s /opt/exasol/patches/exasol_bg.png /usr/share/nagios3/htdocs/images/exasol_bg.png
 
 # create entrypoint
 ADD etc/dockerinit /etc/

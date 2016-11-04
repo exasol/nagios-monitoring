@@ -1,0 +1,11 @@
+--- /etc/nagios3/stylesheets/common.css	2016-11-04 13:49:34.543600827 +0000
++++ /etc/nagios3/stylesheets/common.css	2016-11-04 13:50:39.907614614 +0000
+@@ -42,7 +42,7 @@
+   margin: 0em;
+   margin: 0.8em 0.8em 2em 0.8em;
+   color: black;
+-  background-color: white;
++  background: url(../images/exasol_bg.png) repeat;
+   font-family: arial, verdana, serif;
+   font-weight: normal;
+   font-size: 10pt;

@@ -1,4 +1,4 @@
---- /usr/share/nagios3/htdocs/side.php.bak  2016-11-04 10:27:23.119977492 +0000
+--- /usr/share/nagios3/htdocs/side.php  2016-11-04 10:27:23.119977492 +0000
 +++ /usr/share/nagios3/htdocs/side.php  2016-11-04 10:27:35.767967004 +0000
 @@ -116,6 +116,7 @@
  <li><a href="<?php echo $cfg["cgi_base_url"];?>/extinfo.cgi?type=4" target="<?php echo $link_target;?>">Performance Info</a></li>
