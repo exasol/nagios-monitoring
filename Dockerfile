@@ -14,7 +14,6 @@ RUN apt-get -y install vim less python3-dialog
 ADD etc/lighttpd/conf-available/10-nagios3.conf /etc/lighttpd/conf-available/
 RUN mkdir -p /etc/lighttpd/certificates
 RUN chown www-data:www-data /etc/lighttpd/certificates
-RUN chown www-data:www-data /var/www/html/cgi-bin
 RUN ln -s /usr/local/bin/nagios-getconfig /usr/lib/cgi-bin/nagios3/getconfig.cgi 
 RUN lighttpd-enable-mod cgi 
 RUN lighttpd-enable-mod auth 
