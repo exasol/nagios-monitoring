@@ -1,11 +1,12 @@
 #!/usr/bin/python
 import ssl, json, time, pyodbc
-from os.path    import isfile, getctime
-from os         import sep
+from os.path    import isfile, getctime, join
+from os         import sep, name
 from sys        import exit, argv, version_info, stdout, stderr
 from urllib     import quote_plus
 from getopt     import getopt
 from xmlrpclib  import ServerProxy
+from time       import time
 
 odbcDriver              = '/opt/exasol/EXASolution_ODBC-5.0.15/lib/linux/x86_64/libexaodbc-uo2214lv2.so'
 pluginVersion           = '16.03'
@@ -17,6 +18,12 @@ userName                = None
 password                = None
 logserviceId            = None
 opts, args              = None, None
+
+if name == 'nt':            #OS == Windows
+    from tempfile import gettempdir
+    cacheDirectory          = gettempdir()
+elif name == 'posix':       #OS == Linux, Unix, etc.
+    cacheDirectory          = r'/var/cache/nagios3'
 
 try:
     opts, args = getopt(argv[1:], 'hVH:d:u:p:l:a:')
@@ -86,6 +93,18 @@ def XmlRpcCall(urlPath = ''):
     return ServerProxy(url)
 
 try:
+    interval = 120
+    intervalFileName = join(cacheDirectory, 'check_db_perf_' + databaseName + '.interval')
+    if isfile(intervalFileName):
+        with open(intervalFileName, 'r+') as f:
+            interval = int(time() - float(f.read()))
+            f.seek(0, 0)
+            f.truncate()
+            f.write(str(time()))
+    else:
+        with open(intervalFileName, 'w') as f:
+            f.write(str(time()))
+
     cluster = XmlRpcCall('/')
     database = XmlRpcCall('/db_' + quote_plus(databaseName))
     odbcConnectionString = 'Driver=%s;EXAHOST=%s;EXAUID=%s;EXAPWD=%s;' % (
@@ -100,22 +119,20 @@ try:
 
     sqlConnection = pyodbc.connect(odbcConnectionString, autocommit=True)
     sqlCursor = sqlConnection.cursor()
-    sqlCommand = """select  MEASURE_TIME, 
-                            LOAD, 
-                            CPU, 
-                            TEMP_DB_RAM, 
-                            HDD_READ, 
-                            HDD_WRITE,
-                            NET, 
-                            SWAP
+    sqlCommand = """select  MEDIAN(LOAD) LOAD, 
+                            MEDIAN(CPU) CPU, 
+                            MEDIAN(TEMP_DB_RAM) TEMP_DB_RAM, 
+                            MEDIAN(HDD_READ) HDD_READ, 
+                            MEDIAN(HDD_WRITE) HDD_WRITE,
+                            MEDIAN(NET) NET, 
+                            MEDIAN(SWAP) SWAP
                     from EXA_STATISTICS.EXA_MONITOR_LAST_DAY
-                    order by 1 
-                    desc limit 1;"""
-
+                    where MEASURE_TIME between ADD_SECONDS(NOW(), -%s) and NOW();
+                    """ % (interval)
     sqlExec = sqlCursor.execute(sqlCommand)
     output = 'OK - performance data transferred |'
     result = sqlExec.fetchone()
-    output += 'load=%i;cpu=%.1f%%;tmp_dbram=%.1fGiB;hdd_read=%.1fMBps;hdd_write=%.1fMBps;net=%.1fMBps;swap=%.1fMBps;' % (
+    output += 'load=%.1f;cpu=%.1f%%;tmp_dbram=%.1fGiB;hdd_read=%.1fMBps;hdd_write=%.1fMBps;net=%.1fMBps;swap=%.1fMBps;' % (
                 float(result.LOAD),
                 float(result.CPU),
                 float(result.TEMP_DB_RAM) / 1024.0,
@@ -124,12 +141,11 @@ try:
                 float(result.NET),
                 float(result.SWAP)
     )
-    sqlCommand = """select  MEASURE_TIME,
-                            USERS,
-                            QUERIES
+    sqlCommand = """select  MEDIAN(USERS) USERS,
+                            MEDIAN(QUERIES) QUERIES
                     from EXA_STATISTICS.EXA_USAGE_LAST_DAY
-                    order by 1
-                    desc limit 1;"""
+                    where MEASURE_TIME between ADD_SECONDS(NOW(), -%s) and NOW();
+                """ % (interval)
     sqlExec = sqlCursor.execute(sqlCommand)
     result = sqlExec.fetchone()
     output += 'users=%i;queries=%i' % (

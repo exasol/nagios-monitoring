@@ -5,7 +5,7 @@ MAINTAINER EXASOL AG
 ADD apt-proxy /etc/apt/apt.conf.d
 RUN bash -c 'echo "deb http://ftp.de.debian.org/debian/ jessie-backports main" >>/etc/apt/sources.list'
 RUN apt-get -y update
-RUN apt-get install -y nagios3 lighttpd php5-cgi pnp4nagios python-pyodbc odbcinst1debian2 netcat patch wget mutt
+RUN apt-get install -y nagios3 lighttpd php5-cgi pnp4nagios python-pyodbc odbcinst1debian2 netcat patch wget ssmtp mutt
 
 # debug section
 RUN apt-get -y install vim less python3-dialog
