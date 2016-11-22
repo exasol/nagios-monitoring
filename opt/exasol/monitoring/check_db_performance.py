@@ -9,7 +9,7 @@ from xmlrpclib  import ServerProxy
 from time       import time
 
 odbcDriver              = '/opt/exasol/EXASolution_ODBC-5.0.15/lib/linux/x86_64/libexaodbc-uo2214lv2.so'
-pluginVersion           = '16.03'
+pluginVersion           = '16.11'
 databaseName            = None
 databaseUser            = None
 databasePassword        = None
@@ -18,6 +18,7 @@ userName                = None
 password                = None
 logserviceId            = None
 opts, args              = None, None
+maxInterval             = 300 #seconds (interval between checks)
 
 if name == 'nt':            #OS == Windows
     from tempfile import gettempdir
@@ -93,11 +94,12 @@ def XmlRpcCall(urlPath = ''):
     return ServerProxy(url)
 
 try:
-    interval = 120
-    intervalFileName = join(cacheDirectory, 'check_db_perf_' + databaseName + '.interval')
+    interval = maxInterval
+    intervalFileName = join(cacheDirectory, 'check_db_perf_%s_%s.interval' % (hostName, databaseName))
     if isfile(intervalFileName):
         with open(intervalFileName, 'r+') as f:
-            interval = int(time() - float(f.read()))
+            intervalNew = int(time() - float(f.read()))
+            interval = intervalNew if intervalNew <= interval else interval  #limit max interval duration to inital value
             f.seek(0, 0)
             f.truncate()
             f.write(str(time()))
