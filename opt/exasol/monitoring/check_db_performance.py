@@ -9,7 +9,7 @@ from xmlrpclib  import ServerProxy
 from time       import time
 
 odbcDriver              = '/opt/exasol/EXASolution_ODBC-5.0.15/lib/linux/x86_64/libexaodbc-uo2214lv2.so'
-pluginVersion           = '16.11'
+pluginVersion           = '16.12'
 databaseName            = None
 databaseUser            = None
 databasePassword        = None
@@ -19,6 +19,7 @@ password                = None
 logserviceId            = None
 opts, args              = None, None
 maxInterval             = 300 #seconds (interval between checks)
+minInterval             = 90 #seconds
 
 if name == 'nt':            #OS == Windows
     from tempfile import gettempdir
@@ -99,7 +100,8 @@ try:
     if isfile(intervalFileName):
         with open(intervalFileName, 'r+') as f:
             intervalNew = int(time() - float(f.read()))
-            interval = intervalNew if intervalNew <= interval else interval  #limit max interval duration to inital value
+            interval = intervalNew if intervalNew <= interval else interval #limit max interval duration to inital value
+            interval = interval if interval >= minInterval else minInterval #prevent empty results if there is no entry
             f.seek(0, 0)
             f.truncate()
             f.write(str(time()))
@@ -134,15 +136,17 @@ try:
     sqlExec = sqlCursor.execute(sqlCommand)
     output = 'OK - performance data transferred |'
     result = sqlExec.fetchone()
-    output += 'load=%.1f;cpu=%.1f%%;tmp_dbram=%.1fGiB;hdd_read=%.1fMBps;hdd_write=%.1fMBps;net=%.1fMBps;swap=%.1fMBps;' % (
-                float(result.LOAD),
-                float(result.CPU),
-                float(result.TEMP_DB_RAM) / 1024.0,
-                float(result.HDD_READ),
-                float(result.HDD_WRITE),
-                float(result.NET),
-                float(result.SWAP)
-    )
+    if not None in result:
+        output += 'load=%.1f;cpu=%.1f%%;tmp_dbram=%.1fGiB;hdd_read=%.1fMBps;hdd_write=%.1fMBps;net=%.1fMBps;swap=%.1fMBps;' % (
+            float(result.LOAD),
+            float(result.CPU),
+            float(result.TEMP_DB_RAM) / 1024.0,
+            float(result.HDD_READ),
+            float(result.HDD_WRITE),
+            float(result.NET),
+            float(result.SWAP)
+        )
+
     sqlCommand = """select  MEDIAN(USERS) USERS,
                             MEDIAN(QUERIES) QUERIES
                     from EXA_STATISTICS.EXA_USAGE_LAST_DAY
@@ -150,10 +154,11 @@ try:
                 """ % (interval)
     sqlExec = sqlCursor.execute(sqlCommand)
     result = sqlExec.fetchone()
-    output += 'users=%i;queries=%i' % (
-            int(result.USERS),
-            int(result.QUERIES)
-    )
+    if not None in result:
+        output += 'users=%i;queries=%i' % (
+                int(result.USERS),
+                int(result.QUERIES)
+        )
     sqlConnection.close()
     print(output)
     exit(0)
