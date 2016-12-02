@@ -1,5 +1,7 @@
 # nagios-monitoring
 
+###### Please note that this is an open source project which is *not officially supported* by EXASOL. We will try to help you as much as possible, but can't guarantee anything since this is not an official EXASOL product.
+
 ## Introduction
 The EXASOL nagios monitoring container provides users a simple starting point for setting up a monitoring system for your EXASOL database. By running the installation procedure, a fully working nagios monitoring container will be created and some initial services configured. Afterwards, you can either use this container as your monitoring solution, or extract the nagios configuration for your own monitoring tool. 
 
