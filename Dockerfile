@@ -54,7 +54,7 @@ RUN ln -s /opt/exasol/patches/exasol_bg.png /usr/share/nagios3/htdocs/images/exa
 # clean up and create entrypoint
 RUN apt-get -yq clean
 ENV TERM=xterm
-ENV LC_ALL=en_US.UTF-8
+ENV LC_ALL=C
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US.UTF-8
 ADD etc/dockerinit /etc/
