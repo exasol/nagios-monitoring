@@ -170,13 +170,6 @@ define service{{
 })
 
 configurationString +=  """define service{{
-        use                     exasol_ping
-        host_name               """
-for i in xrange(1, nodeIterator + 1):
-    configurationString += '%s-node%s,' % (clusterName, i)
-configurationString += '%s-license\n}\n' % (clusterName)
-
-configurationString +=  """define service{{
         use                     exasol_exaoperationhttps
         host_name               """
 for i in xrange(1, nodeIterator + 1):
