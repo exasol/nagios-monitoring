@@ -45,16 +45,26 @@ RUN sed -r 's# notify-service-by-email# exasol-notify-service-by-email#g' /etc/n
 ADD usr/local /usr/local
 RUN chmod -v 755 /usr/local/bin/*
 
+#install openmanage links
+ADD opt/check_openmanage-3.7.12 /opt/check_openmanage-3.7.12
+RUN ln -s /opt/check_openmanage-3.7.12/man/check_openmanage.8       /usr/share/man/man8
+RUN ln -s /opt/check_openmanage-3.7.12/man/check_openmanage.conf.5  /usr/share/man/man5
+RUN ln -s /opt/check_openmanage-3.7.12/check_openmanage             /usr/lib/nagios/plugins
+RUN ln -s /opt/check_openmanage-3.7.12/dell_openmanage.cfg          /etc/nagios3/conf.d
+
 # add further patches
 ADD opt/exasol/patches/* /opt/exasol/patches/
 RUN bash -c 'patch -p1 /usr/share/nagios3/htdocs/side.php < /opt/exasol/patches/nagios-downloadbutton.patch'
 RUN bash -c 'patch -l -p1 /etc/nagios3/stylesheets/common.css < /opt/exasol/patches/nagios-exasol-background.patch'
 RUN ln -s /opt/exasol/patches/exasol_bg.png /usr/share/nagios3/htdocs/images/exasol_bg.png
 
+#licenses
+ADD 3rd_party_licenses/check_openmanage-3.7.12-GPLv3.txt /opt/check_openmanage-3.7.12/LICENSE
+
 # clean up and create entrypoint
 RUN apt-get -yq clean
 ENV TERM=xterm
-ENV LC_ALL=C
+ENV LC_ALL=en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US.UTF-8
 ADD etc/dockerinit /etc/

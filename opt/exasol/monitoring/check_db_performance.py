@@ -8,7 +8,7 @@ from getopt     import getopt
 from xmlrpclib  import ServerProxy
 from time       import time
 
-odbcDriver              = '/opt/exasol/EXASolution_ODBC-5.0.15/lib/linux/x86_64/libexaodbc-uo2214lv2.so'
+odbcDriver              = '/opt/exasol/EXASolution_ODBC-6.0.rc1/lib/linux/x86_64/libexaodbc-uo2214lv2.so'
 pluginVersion           = '16.12'
 databaseName            = None
 databaseUser            = None

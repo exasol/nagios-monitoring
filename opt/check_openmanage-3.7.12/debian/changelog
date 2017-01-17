@@ -1,0 +1,149 @@
+check-openmanage (3.7.12-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Tue, 28 Jul 2014 14:00:00 +0200
+
+check-openmanage (3.7.11-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Tue, 06 Aug 2013 16:00:00 +0200
+
+check-openmanage (3.7.10-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Fri, 19 Jul 2013 15:00:00 +0200
+
+check-openmanage (3.7.9-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Mon, 07 Jan 2013 12:00:00 +0100
+
+check-openmanage (3.7.8-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Wed, 12 Dec 2012 12:00:00 +0100
+
+check-openmanage (3.7.7-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Thu, 06 Dec 2012 12:00:00 +0100
+
+check-openmanage (3.7.6-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Thu, 28 Jun 2012 12:00:00 +0200
+
+check-openmanage (3.7.5-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Fri, 13 Apr 2012 13:00:00 +0100
+
+check-openmanage (3.7.4-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Thu, 29 Mar 2012 13:00:00 +0100
+
+check-openmanage (3.7.3-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Wed, 05 Oct 2011 15:00:00 +0200
+
+check-openmanage (3.7.2-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Mon, 19 Sep 2011 15:00:00 +0200
+
+check-openmanage (3.7.1-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Mon, 22 Aug 2011 10:00:00 +0200
+
+check-openmanage (3.7.0-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Mon, 15 Aug 2011 14:00:00 +0200
+
+check-openmanage (3.6.8-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Tue, 06 Jun 2011 12:56:07 +0200
+
+check-openmanage (3.6.7-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Thu, 12 May 2011 12:56:07 +0200
+
+check-openmanage (3.6.6-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Thu, 28 Apr 2011 11:13:02 +0200
+
+check-openmanage (3.6.5-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Wed, 09 Feb 2011 14:27:36 +0100
+
+check-openmanage (3.6.4-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Tue, 04 Jan 2011 12:30:26 +0100
+
+check-openmanage (3.6.3-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Mon, 13 Dec 2010 10:49:20 +0100
+
+check-openmanage (3.6.2-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Tue, 25 Nov 2010 11:41:15 +0100
+
+check-openmanage (3.6.1-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Tue, 02 Nov 2010 12:12:15 +0100
+
+check-openmanage (3.6.0-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Mon, 30 Aug 2010 11:21:08 +0200
+
+check-openmanage (3.5.10-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Wed, 14 Jul 2010 13:44:04 +0200
+
+check-openmanage (3.5.9-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Trond Hasle Amundsen <t.h.amundsen@usit.uio.no>  Wed, 30 Jun 2010 13:21:20 +0200
+
+check-openmanage (3.5.8-1) unstable; urgency=low
+
+  * Initial release.
+
+ -- Morten Werner Forsbring <werner@debian.org>  Thu, 17 Jun 2010 16:41:15 +0200

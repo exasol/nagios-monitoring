@@ -82,7 +82,6 @@ while clusterNodes == 0 and not abortWizard:
 if abortWizard:
     exit(1)
 
-
 for dbName in cluster.getDatabaseList():
     if raw_input('Do you want to monitor the database instance "%s"? (Y/n)' % dbName).lower().strip() != 'n':
         skipInstance = False
@@ -102,7 +101,22 @@ for dbName in cluster.getDatabaseList():
                 skipInstance = raw_input('Do you want to try again? (Y/n) ').lower().strip() == 'n'
                 print('\n')
 
-
+omsaIps = None
+omsaNodes = []
+snmpCommunity = ''
+if raw_input('Do you want to use "check_openmanage" for hardware monitoring? (N/y)').lower().strip() == 'y':
+    snmpCommunity = raw_input('SNMP community string: ')
+    allIps = [] + (clusterNodeIps)
+    allIps.append(licenseServerIp)
+    omsaIps = []
+    for ip in allIps:
+        proc = Popen(['nc', '-zw1', '-u', ip, '161'], stdout=PIPE, stderr=STDOUT)
+        if proc.wait() == 0: #snmpd is running and reachable
+            proc = Popen(['snmpget', '-v2c', '-c', snmpCommunity, ip, '1.3.6.1.4.1.674.10892.1.100.13.0'], stdout=PIPE, stderr=STDOUT)
+            if proc.wait() == 0: 
+                if 'dell' in proc.stdout.read().lower(): #DELL OMSA plugin is installed
+                    print('Use check_openmanage for %s' % ip)
+                    omsaIps.append(ip)
 
 configurationString += """define hostgroup {{
     hostgroup_name              {ClusterName}
@@ -134,9 +148,14 @@ define host{{
     'LicenseServerAddr' : licenseServerIp
 })
 
+if omsaIps and licenseServerIp in omsaIps:
+    omsaNodes.append('%s-license' % clusterName)
+
 nodeIterator = 0
 for ip in clusterNodeIps:
     nodeIterator += 1
+    if omsaIps and ip in omsaIps:
+        omsaNodes.append('%s-node%i' % (clusterName, nodeIterator))
     configurationString += """define host{{
     use                         {ClusterName}
     host_name                   {ClusterName}-node{i}
@@ -204,6 +223,19 @@ define service{{
     'User'              : username,
     'Password'          : password
 })
+
+if omsaIps:
+    configurationString += """define service{{
+            use                     dell_check_omsa
+            host_name               {HostNames}
+            _community              {Community}
+    }}
+
+    """.format(**{
+        'HostNames'         : str(omsaNodes)[1:-1].replace("'", ""),
+        'Community'         : snmpCommunity
+    })
+
 
 configFilename = '/etc/nagios3/conf.d/exa_%s.cfg' % clusterName
 f = open(configFilename, 'w')
