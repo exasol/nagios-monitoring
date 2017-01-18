@@ -115,7 +115,7 @@ if raw_input('Do you want to use "check_openmanage" for hardware monitoring? (N/
             proc = Popen(['snmpget', '-v2c', '-c', snmpCommunity, ip, '1.3.6.1.4.1.674.10892.1.100.13.0'], stdout=PIPE, stderr=STDOUT)
             if proc.wait() == 0: 
                 if 'dell' in proc.stdout.read().lower(): #DELL OMSA plugin is installed
-                    print('Use check_openmanage for %s' % ip)
+                    print('*** check_openmanage will be used for %s' % ip)
                     omsaIps.append(ip)
 
 configurationString += """define hostgroup {{
@@ -188,7 +188,7 @@ define service{{
     'ClusterName'       : clusterName
 })
 
-configurationString +=  """define service{{
+configurationString +=  """define service{
         use                     exasol_exaoperationhttps
         host_name               """
 for i in xrange(1, nodeIterator + 1):
@@ -209,7 +209,15 @@ for dbName in databaseDict.keys():
         _dbpassword             {Password}
 }}
 
-define service{{
+""".format(**{
+    'ClusterName'       : clusterName,
+    'Database'          : dbName,
+    'User'              : username,
+    'Password'          : password
+})
+
+for dbName in cluster.getDatabaseList():
+    configurationString += """define service{{
         use                     exasol_db_diskspace
         host_name               {ClusterName}-license
         name                    exasol_db_diskspace_{Database}
@@ -220,8 +228,6 @@ define service{{
 """.format(**{
     'ClusterName'       : clusterName,
     'Database'          : dbName,
-    'User'              : username,
-    'Password'          : password
 })
 
 if omsaIps:
