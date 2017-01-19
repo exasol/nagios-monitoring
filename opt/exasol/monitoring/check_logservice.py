@@ -1,17 +1,28 @@
 #!/usr/bin/python
 import xmlrpclib, ssl, json
-from os         import sep
+from os.path    import isfile
+from os         import sep, name
 from sys        import exit, argv, version_info, stdout, stderr
 from urllib     import quote_plus
 from getopt     import getopt
 from xmlrpclib  import ServerProxy
+from uuid       import uuid4
 
-pluginVersion           = "16.03"
+pluginVersion           = "17.01"
 hostName                = None
 userName                = None
 password                = None
 logserviceId            = None
 opts, args              = None, None
+cacheDirectory          = None
+uuidFile                = None
+uuidString              = None
+
+if name == 'nt':            #OS == Windows
+    from tempfile import gettempdir
+    cacheDirectory          = gettempdir()
+elif name == 'posix':       #OS == Linux, Unix, etc.
+    cacheDirectory          = r'/var/cache/nagios3'
 
 try:
     opts, args = getopt(argv[1:], 'hVH:i:u:p:')
@@ -67,9 +78,18 @@ def XmlRpcCall(urlPath = ''):
         return ServerProxy(url, context=sslcontext)
     return ServerProxy(url)
 
+uuidFile = '%s%scheck_logservice_%s_%s.uuid' % (cacheDirectory, sep, logserviceId, hostName) 
+if isfile(uuidFile):
+    with open(uuidFile) as f:
+        uuidString = f.read().strip()
+else:
+    with open(uuidFile, 'w') as f:
+        uuidString = uuid4().hex
+        f.write(uuidString)
+
 cluster = XmlRpcCall('/')
 logservice = XmlRpcCall('/logservice%i' % logserviceId)
-logserviceUserId = 'check_logservice_%s_%s_%i' % (hostName, userName, logserviceId)
+logserviceUserId = 'check_logservice_%s_%s_%s_%i' % (uuidString, hostName, userName, logserviceId)
 logEntries = logservice.logEntriesTagged(logserviceUserId)
 logMessages = ''
 logPriority = 0
