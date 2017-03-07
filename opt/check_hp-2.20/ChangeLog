@@ -1,0 +1,190 @@
+Version 2.20
+============
+Quick progress these days... as of Andrew Gray's inquiry I added support for
+retrieving Smart Array CPU information. This is not active by default and may
+be used to check and/or gather performance data.
+
+As usual I cleaned some code parts. This time there are some improvements to
+the output of '--help' and more important to the output of the debug switch
+('-d|--debug'). Enjoy!
+
+
+Version 2.19
+============
+The plugin now displays some product information like model, serial number,
+form factor and asset tag (if given). Thanks to Billy Szkoda for asking for
+this feature!
+
+Some minor code cleanup done in between.
+
+Please note: this information is now retrieved by default on every query. If
+you don't need or don't like the idea, or you'd rather have higher performance
+on a big network, just skip this using '-x cpqSystemInfo' and you'll get the
+behaviour as it was before.
+
+
+Version 2.18
+============
+Updated state information for newer generations of HP equipment. Thanks to
+Jason Wasser who pointet out an error and by debugging helped discover the
+missing information provided by new Gen9 servers. This release now includes
+the latest MIBS as they are freely available with the HP SIM 7.4 release.
+Last not least, after Jason pointed this out, the /usr/lib64/nagios/plugins
+folder is now automatically searched as well.
+
+
+Version 2.17
+============
+Added check for a Drive Array's accelerator condition as suggested by Robert
+Brooks. Thanks!
+
+
+Version 2.16
+============
+REALLY fixes broken versions 2.14 + 2.15 (automatic lib-folder discovery).
+
+
+Version 2.15
+============
+Fixes broken version 2.14 (change introducing automatic lib-folder discovery).
+
+
+Version 2.14
+============
+Thanks this time to an improvement by Steffen Weinreich who added a parameter
+that allow "requiring" the presence of some subsystems (they not being there
+during the check being the issue at hand). Use it by specifying the following:
+
+  -r subsystem1,subsystem2,...
+
+
+Version 2.13
+============
+Many thanks to Rod Payne, Buffalo NY, for the current addition. He suggested it
+would be helpful to specify particular values that should be treated as
+warnings. Specifically this could mean that instead of treating all NIC logical
+group problems as warnings, he would want to make “redundancyReduced” a warning
+and leave “redundancyLost” as critical. He extended the code to allow the
+warning exception to be more specific using the following syntax:
+
+  -w cpqNicIfLogMapStatus=6
+
+
+Version 2.12
+============
+Got a few nice inputs from George Hansper, who thought it better to indicate
+more details about single component units in order to have the possibility to
+exclude some specific device (maybe not a best practice to be followed, but
+nevertheless a valid requirement in some specific and possibly temporary cases).
+
+
+Version 2.11
+============
+Some more testing done by Martin Boer together with some nice feedback on how
+to shorten down and beautify the code:
+
+- replaced a lot of silly 'elsif' statements with a single (but safe) 'eval'
+- introduced a '-w' parameter to set some failures to WARNING states instead
+  of CRITICAL since "you don't consider a bad disk in a RAID configuration
+  necessarily something you want to find out in the middle of the night"
+
+
+Version 2.10
+============
+Some changes include:
+
+- definitions now moved into a hash of hashes instead of different arrays
+- some cleanup to the '--help' parameter (now hinted at when none is given)
+- added an '--exclude' parameter for different checks as requested by 'Mastrboy'
+
+
+Version 2.9
+===========
+Thanks again to Jean Prat for:
+
+- adding cpqNicIfLogMapStatus
+- adding cpqNicIfPhysAdapterStatus
+- giving component names a more readable form
+
+
+Version 2.8
+===========
+One more issue fixed with the cpqHeEventLogCondition. Thanks to Seth Rice for
+his support while debugging.
+
+
+Version 2.7
+===========
+Minor bug introduced by the cpqHeResilientMemCondition check should now be ok.
+This comes together with some small cleanup around that part.
+
+Thanks to Peter Tauber for pointing it out and verifying.
+
+
+Version 2.6
+===========
+Thanks and credits to Milan Karalic for cpqHeResilientMemCondition!
+
+Major thanks to Jean Prat for the "few" things that follow here:
+
+ - debug printout for inexistent OID-trees
+ - support for cpqDaTapeDrvStatus (tape drives)
+ - support for cpqHeEventLogCondition (event log)
+ - support for cpqFcaHostCntlrStatus (fibre channel components)
+
+Code indentation cleanup for the parts taken from check_ifoperstatus.
+
+
+Version 2.5
+===========
+Minor fix for a bug I introduced when putting this under version control.
+Now it should all work nicely again.
+
+
+Version 2.4
+===========
+The plugin has now been put under version control and a proper ChangeLog is
+included.
+
+
+Version 2.3
+===========
+The README now includes documentation about all requirements:
+
+ - path to nagios-plugins “utils.pm”
+ - the distribution’s “libsnmp-perl” package if you are missing Net/SNMP.pm
+
+
+Version 2.2
+===========
+A minor update:
+
+ - one typo fixed, which would have prevented the output of the actual state of
+   physical drives (the error itself would have been reported)
+ - the README now includes a hint about the debug option “-d”, which is not
+   intended to be used in production
+
+
+Version 2.1
+===========
+This is mainly the same as version 2 (see below), except it now handles a
+counter for every hardware component checked. If zero values are returned by
+the snmp agent, the plugin exits with a WARNING state.
+
+
+Version 2.0
+===========
+First release of this all-perl, mib-translation-table-free, all-in-one
+version.
+
+Check CPUs, fans, array controllers, logical / physical drives, temperature
+and power supplies on your Proliant servers or blade systems through SNMP.
+
+The plugin uses Compaq/HPs Insight Manager SNMP Agents installed on either
+Windows or Linux machines to check CPUs, fans, array controllers, logical /
+physical drives, temperature and power supplies on your Proliant servers or
+blade systems.
+
+Compaq MIBs are included in the attached archive. The new version 2 is a
+complete rewrite in Perl and only uses the OID-Trees, so you don’t need to add
+the Compaq MIBs to your local configuration.

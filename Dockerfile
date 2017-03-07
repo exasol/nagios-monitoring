@@ -45,12 +45,17 @@ RUN sed -r 's# notify-service-by-email# exasol-notify-service-by-email#g' /etc/n
 ADD usr/local /usr/local
 RUN chmod -v 755 /usr/local/bin/*
 
-#install openmanage links
+#install check_openmanage links
 ADD opt/check_openmanage-3.7.12 /opt/check_openmanage-3.7.12
 RUN ln -s /opt/check_openmanage-3.7.12/man/check_openmanage.8       /usr/share/man/man8
 RUN ln -s /opt/check_openmanage-3.7.12/man/check_openmanage.conf.5  /usr/share/man/man5
 RUN ln -s /opt/check_openmanage-3.7.12/check_openmanage             /usr/lib/nagios/plugins
 RUN ln -s /opt/check_openmanage-3.7.12/dell_openmanage.cfg          /etc/nagios3/conf.d
+
+#install check_hp:
+ADD opt/check_hp-2.20 /opt/check_hp-2.20
+RUN ln -s /opt/check_hp-2.20/check_hp                               /usr/lib/nagios/plugins
+RUN ln -s /opt/check_hp-2.20/check_hp.cfg                           /etc/nagios3/conf.d
 
 # add further patches
 ADD opt/exasol/patches/* /opt/exasol/patches/
@@ -60,6 +65,7 @@ RUN ln -s /opt/exasol/patches/exasol_bg.png /usr/share/nagios3/htdocs/images/exa
 
 #licenses
 ADD 3rd_party_licenses/check_openmanage-3.7.12-GPLv3.txt /opt/check_openmanage-3.7.12/LICENSE
+ADD 3rd_party_licenses/check_hp-2.20-GPL.txt /opt/check_hp-2.20/LICENSE
 
 # clean up and create entrypoint
 RUN apt-get -yq clean
@@ -67,5 +73,6 @@ ENV TERM=xterm
 ENV LC_ALL=en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US.UTF-8
+RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 ADD etc/dockerinit /etc/
 ENTRYPOINT bash -c /etc/dockerinit

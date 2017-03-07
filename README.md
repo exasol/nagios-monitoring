@@ -117,6 +117,13 @@ You can download the generated configuration files using the Nagios web interfac
 ## Troubleshooting / Known problems
 * on Windows docker hosts you need to start your command line prompt (CMD.EXE) with administrator privileges, otherwise pulling the image won't work properly
 
+## Bugs / Questions / Support
+If you have questions or found some bugs, you can inform us using our Community Portal: https://www.exasol.com/portal/questions
+Please note that we trying to fix all bugs and improve these project as far as possible but there is no guarantee for bugfixes or new features. If you interested in helping us to improve this project (coding, documentation, etc.) please let us know.
 
 ## Sources
 All sources to create the docker image can be found on GitHub: https://github.com/EXASOL/nagios-monitoring
+
+## Used 3rd party plugins
+* check\_hp: http://www.crowdedplace.com/category/check_hp/
+* check\_openmanage: http://folk.uio.no/trondham/software/check_openmanage.html

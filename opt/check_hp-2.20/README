@@ -1,0 +1,63 @@
+WHAT DOES IT DO
+===============
+
+Check CPUs, fans, array controllers, logical / physical drives, temperature and
+power supplies on your Proliant servers or blade systems through SNMP.
+
+The plugin uses Compaq/HPs Insight Manager SNMP Agents installed on either
+Windows or Linux machines to check CPUs, fans, array controllers, logical /
+physical drives, temperature and power supplies on your Proliant servers or
+blade systems. 
+
+Compaq MIBs are included in the attached archive. The new version 2 is a
+complete rewrite in Perl and only uses the OID-Trees, so you don't need to add
+the Compaq MIBs to your local configuration. 
+
+Please do not misread the "-d" parameter as i guess jleonard78 did. The "-d"
+parameter stands for "DEBUG" and is not intended for production use inside
+Nagios! check_hp will give you information about which object failed if there
+is any.
+
+
+USAGE
+=====
+
+Make sure you have all REQUIREMENTS in place (see below), then simply run
+"./check_hp --help" for more details.
+
+
+REQUIREMENTS
+============
+
+Please update the 'lib' path at the top of check_hp to fit your distribution.
+check_hp needs to locate the utils.pm library that comes with nagios-plugins.
+
+You will need the Net::SNMP package as well. In most distributions this is
+available as a package named "libsnmp-perl" - so make sure to install it if you
+stumble accross an error starting with "Can't locate Net/SNMP.pm in @INC [...]".
+
+Please pay attention to include at least one parameter in the nagios/icinga
+configuration or you may stumble over an "**ePN" error complaining about using
+an uninitialized value $opt. This could be due to a know issue, for more details
+see:
+
+  http://tracker.nagios.org/view.php?id=88
+
+You do not need anything else from this package other than "check_hp" script
+itself. The MIBs folder is purely for your information.
+
+
+OUTPUT
+======
+
+Please do not misread the "-d" parameter, which stands for "DEBUG" and is not
+intended for production use! check_hp will output information about which
+object failed if there is any:
+
+Compaq/HP Agent Check: cpqDaCntlrCondition (0:degraded) cpqDaLogDrvStatus (0.1:
+recovering) cpqDaLogDrvCondition (0.1:degraded) cpqDaPhyDrvStatus (0.0:failed)
+cpqDaPhyDrvCondition (0.0:failed)
+
+
+==
+$Id: README 50 2013-08-26 07:37:02Z gunny $

@@ -1,0 +1,773 @@
+#! /usr/bin/perl -w
+#
+# check_hp - nagios plugin
+#
+# Copyright (C) 2008-2015 Guenther Mair,
+# Derived from check_ifoperstatus by Christoph Kron.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#
+#
+# Report bugs to:  guenther.mair@hoslo.ch
+#
+# $Id: check_hp 73 2015-02-11 15:50:46Z gunny $
+#
+
+my $libexec;
+
+BEGIN {
+  my @lib_folders = qw(/usr/local/nagios/libexec/ /usr/lib/nagios/plugins/ /usr/lib64/nagios/plugins/);
+  foreach my $lib (@lib_folders) {
+    if (-d $lib)  {
+      $libexec = $lib;
+      last;
+    }
+  }
+}
+
+use POSIX;
+use strict;
+
+use lib $libexec;
+use utils qw($TIMEOUT %ERRORS &print_revision &support);
+
+use Net::SNMP;
+use Getopt::Long;
+&Getopt::Long::config('bundling');
+
+
+## function prototypes
+
+sub in_array($@);
+sub print_help();
+sub usage();
+sub process_arguments();
+
+
+## module-specific variables
+
+my $PROGNAME = "check_hp";
+my $REVISION = '$Rev: 73 $';
+my $debug;
+my $exclude = '';
+my $warnings = '';
+my $required = '';
+my @all_exclude;
+my @all_warnings;
+my @all_required;
+my $countComponents = 0;
+my $state = 'OK';
+my $answer = "";
+my $result;
+my $maxcpu = undef;
+my $maxcommands = undef;
+my $maxlatency = undef;
+my $collect_perfdata = undef;
+my $perfdata = "";
+
+
+## variables for argument handling
+
+my $opt_h;
+my $opt_V;
+my $status;
+
+
+## snmp specific variables
+
+my $timeout;
+my $hostname;
+my $session;
+my $error;
+my $response;
+my $key;
+my $community = "public";
+my $snmpversion = 1;
+my $maxmsgsize = 1472; # Net::SNMP default is 1472
+my ($seclevel, $authproto, $secname, $authpass, $privpass, $auth, $priv);
+my $context = "";
+my $port = 161;
+my @snmpoids;
+
+
+## Compaq/HP system information
+
+my $cpqSystemInfo = '1.3.6.1.4.1.232.2.2';
+
+my $cpqSiProductName = '1.3.6.1.4.1.232.2.2.4.2.0';
+my $cpqSiFormFactor = '1.3.6.1.4.1.232.2.2.2.2.0';
+my $cpqSiSysSerialNum = '1.3.6.1.4.1.232.2.2.2.1.0';
+my $cpqSiAssetTag = '1.3.6.1.4.1.232.2.2.2.3.0';
+
+
+## Compaq/HP drive array - controller performance data
+
+my $cpqDaCntlrPerfEntry = '1.3.6.1.4.1.232.3.2.7.1.1';
+
+my $cpqDaCntlrPerfCpuPercentBusy = '1.3.6.1.4.1.232.3.2.7.1.1.5';
+my $cpqDaCntlrPerfCommandCount = '1.3.6.1.4.1.232.3.2.7.1.1.6';
+my $cpqDaCntlrPerfAvgLatency = '1.3.6.1.4.1.232.3.2.7.1.1.7';
+
+
+## Compaq/HP system states
+
+my %cpqGenericStates = (
+  '1', 'other',
+  '2', 'ok',
+  '3', 'degraded',
+  '4', 'failed');
+
+my %cpqFormFactors = (
+  '1', 'unknown',
+  '2', 'portable',
+  '3', 'laptop',
+  '4', 'desktop',
+  '5', 'tower',
+  '6', 'mini-tower',
+  '7', 'rack-mount');
+
+my %cpqDaLogDrvStates = (
+  '1', 'other',
+  '2', 'ok',
+  '3', 'failed',
+  '4', 'unconfigured',
+  '5', 'recovering',
+  '6', 'readyForRebuild',
+  '7', 'rebuilding',
+  '8', 'wrongDrive',
+  '9', 'badConnect',
+  '10', 'overheating',
+  '11', 'shutdown',
+  '12', 'expanding',
+  '13', 'notAvailable',
+  '14', 'queuedForExpansion',
+  '15', 'multipathAccessDegraded',
+  '16', 'erasing',
+  '17', 'predictiveSpareRebuildReady',
+  '18', 'rapidParityInitInProgress',
+  '19', 'rapidParityInitPending',
+  '20', 'noAccessEncryptedNoCntlrKey',
+  '21', 'unencryptedToEncryptedInProgress',
+  '22', 'newLogDrvKeyRekeyInProgress',
+  '23', 'noAccessEncryptedCntlrEncryptnNotEnbld',
+  '24', 'unencryptedToEncryptedNotStarted',
+  '25', 'newLogDrvKeyRekeyRequestReceived');
+
+my %cpqDaPhyDrvStates = (
+  '1', 'other',
+  '2', 'ok',
+  '3', 'failed',
+  '4', 'predictiveFailure',
+  '5', 'erasing',
+  '6', 'eraseDone',
+  '7', 'eraseQueued',
+  '8', 'ssdWearOut',
+  '9', 'notAuthenticated');
+
+my %cpqDaPhyDrvSmartStates = (
+  '1', 'other',
+  '2', 'ok',
+  '3', 'replaceDrive',
+  '4', 'replaceDriveSSDWearOut');
+
+my %cpqDaTapeDrvStates = (
+  '1', 'unknown',
+  '2', 'ok',
+  '3', 'degraded',
+  '4', 'failed',
+  '5', 'offline',
+  '6', 'missingWasOk',
+  '7', 'missingWasOffline');
+
+my %cpqSeCpuStates = (
+  '1', 'unknown',
+  '2', 'ok',
+  '3', 'degraded',
+  '4', 'failed',
+  '5', 'disabled');
+
+my %cpqHeResilientMemStates = (
+  '1', 'other',
+  '2', 'notProtected',
+  '3', 'protected',
+  '4', 'degraded',
+  '5', 'dimmEcc',
+  '6', 'mirrorNoFaults',
+  '7', 'mirrorWithFaults',
+  '8', 'hotSpareNoFaults',
+  '9', 'hotSpareWithFaults',
+  '10', 'xorNoFaults',
+  '11', 'xorWithFaults',
+  '12', 'advancedEcc',
+  '13', 'advancedEccWithFaults',
+  '14', 'lockStep',
+  '15', 'lockStepWithFaults');
+
+my %cpqFcaHostCntlrStatus = (
+  '1', 'unknown',
+  '2', 'ok',
+  '3', 'failed',
+  '4', 'shutdown',
+  '5', 'loopDegraded',
+  '6', 'loopFailed',
+  '7', 'notConnected');
+
+my %cpqNicIfLogMapStates = (
+  '1', 'unknown',
+  '2', 'ok',
+  '3', 'primaryFailed',
+  '4', 'standbyFailed',
+  '5', 'groupFailed',
+  '6', 'redundancyReduced',
+  '7', 'redundancyLost');
+
+my %cpqNicIfPhysAdapterStates = (
+  '1', 'unknown',
+  '2', 'ok',
+  '3', 'generalFailure',
+  '4', 'linkFailure');
+
+## Compaq/HP system OIDs (ascending numeric order), names and state-types
+
+my %cpqComponents = (
+   cpqSeCpuStatus => {
+     OID  => '1.3.6.1.4.1.232.1.2.2.1.1.6',
+     name => 'CPU status',
+     type => 'cpqSeCpuStates',
+   },
+   cpqDaCntlrCondition => {
+     OID  => '1.3.6.1.4.1.232.3.2.2.1.1.6',
+     name => 'controller status',
+     type => 'cpqGenericStates',
+   },
+   cpqDaAccelCondition => {
+     OID  => '1.3.6.1.4.1.232.3.2.2.2.1.9',
+     name => 'array accelerator status',
+     type => 'cpqGenericStates',
+   },
+   cpqDaLogDrvStatus => {
+     OID  => '1.3.6.1.4.1.232.3.2.3.1.1.4',
+     name => 'logical drive status',
+     type => 'cpqDaLogDrvStates',
+   },
+   cpqDaLogDrvCondition => {
+     OID  => '1.3.6.1.4.1.232.3.2.3.1.1.11',
+     name => 'logical drive and associated physical state',
+     type => 'cpqGenericStates',
+   },
+   cpqDaPhyDrvStatus => {
+     OID  => '1.3.6.1.4.1.232.3.2.5.1.1.6',
+     name => 'physical drive status',
+     type => 'cpqDaPhyDrvStates',
+   },
+   cpqDaPhyDrvCondition => {
+     OID  => '1.3.6.1.4.1.232.3.2.5.1.1.37',
+     name => 'physical drive condition',
+     type => 'cpqGenericStates',
+   },
+   cpqDaPhyDrvSmartStatus => {
+     OID  => '1.3.6.1.4.1.232.3.2.5.1.1.57',
+     name => 'physical drive S.M.A.R.T status',
+     type => 'cpqDaPhyDrvSmartStates',
+   },
+   cpqDaTapeDrvStatus => {
+     OID  => '1.3.6.1.4.1.232.3.2.9.1.1.8',
+     name => 'tape drive status',
+     type => 'cpqDaTapeDrvStates',
+   },
+   cpqHeEventLogCondition => {
+     OID  => '1.3.6.1.4.1.232.6.2.11.2.0',
+     name => 'overall IML entries',
+     type => 'cpqGenericStates',
+   },
+   cpqHeThermalSystemFanStatus => {
+     OID  => '1.3.6.1.4.1.232.6.2.6.4',
+     name => 'status of the processor fan(s)',
+     type => 'cpqGenericStates',
+   },
+   cpqHeThermalCpuFanStatus => {
+     OID  => '1.3.6.1.4.1.232.6.2.6.5',
+     name => 'status of the fan(s)',
+     type => 'cpqGenericStates',
+   },
+   cpqHeFltTolFanCondition => {
+     OID  => '1.3.6.1.4.1.232.6.2.6.7.1.9',
+     name => 'condition of the fan',
+     type => 'cpqGenericStates',
+   },
+   cpqHeTemperatureCondition => {
+     OID  => '1.3.6.1.4.1.232.6.2.6.8.1.6',
+     name => 'temperature sensor condition',
+     type => 'cpqGenericStates',
+   },
+   cpqHeFltTolPwrSupplyCondition => {
+     OID  => '1.3.6.1.4.1.232.6.2.9.1',
+     name => 'overall condition of power supply subsystem',
+     type => 'cpqGenericStates',
+   },
+   cpqHeFltTolPowerSupplyCondition => {
+     OID  => '1.3.6.1.4.1.232.6.2.9.3.1.4',
+     name => 'condition of the power supply',
+     type => 'cpqGenericStates',
+   },
+   cpqRackCommonEnclosureFanCondition => {
+     OID  => '1.3.6.1.4.1.232.22.2.3.1.3.1.11',
+     name => 'condition of the rack fan',
+     type => 'cpqGenericStates',
+   },
+   cpqRackPowerSupplyCondition => {
+     OID  => '1.3.6.1.4.1.232.22.2.5.1.1.1.17',
+     name => 'condition of the power supply',
+     type => 'cpqGenericStates',
+   },
+   cpqHeResilientMemCondition => {
+     OID  => '1.3.6.1.4.1.232.6.2.14.4',
+     name => 'condition of the memory protection subsystem',
+     type => 'cpqHeResilientMemStates',
+   },
+   cpqNicIfLogMapStatus => {
+     OID  => '1.3.6.1.4.1.232.18.2.2.1.1.11',
+     name => 'status of the NIC logical group',
+     type => 'cpqNicIfLogMapStates',
+   },
+   cpqFcaHostCntlrStatus => {
+     OID  => '1.3.6.1.4.1.232.16.2.7.1.1.4',
+     name => 'fibre channel host controller status',
+     type => 'cpqFcaHostCntlrStates',
+   },
+   cpqNicIfPhysAdapterStatus => {
+     OID  => '1.3.6.1.4.1.232.18.2.3.1.1.14',
+     name => 'physical adapter status',
+     type => 'cpqNicIfPhysAdapterStates',
+   });
+
+
+## validate arguments
+
+process_arguments();
+
+
+## just in case of problems, let's avoid blocking the calling process for too long
+
+$SIG{'ALRM'} = sub {
+  print ("ERROR: No snmp response from $hostname (alarm)\n");
+  exit $ERRORS{"UNKNOWN"};
+};
+
+alarm($timeout);
+
+
+## main function
+print "Compaq/HP Agent Check: " if ( ! defined $debug);
+
+## fetch and print system information
+if (in_array('cpqSystemInfo', @all_exclude)) {
+  print "\ncpqSystemInfo will not be checked.\n" if (defined $debug);
+} else {
+  print_system_information();
+}
+
+## verify information
+for my $component (keys %cpqComponents) {
+  if (in_array($component, @all_exclude)) {
+    print " excluding '".$component."' from check\n" if (defined $debug);
+    next;
+  }
+
+  $result = fetch_status($cpqComponents{$component}{OID}, $cpqComponents{$component}{name}, $cpqComponents{$component}{type}, $component);
+  if ((in_array($component, @all_required)) && ($result < 0))  {
+    print " " . $cpqComponents{$component}{name} . " (NOT FOUND)";
+    print " required '".$component."' not found\n" if (defined $debug);
+    $state = 'CRITICAL';
+  }
+}
+
+## verify smart array controller performance
+if ($maxcpu || $maxcommands || $maxlatency || $collect_perfdata) {
+  $perfdata = verify_performance_data();
+}
+
+## set status information
+if ($countComponents == 0) {
+  $state = "UNKNOWN";
+  $answer = " no cpq/hp component found";
+} elsif ( ! defined $debug && $state eq 'OK') {
+  $answer = " overall system state OK";
+}
+
+## terminate with exit code
+printf("%s%s\n", $answer, $perfdata);
+exit $ERRORS{$state};
+
+
+## subroutines
+
+sub ltrim { my $s = shift; $s =~ s/^\s+//;       return $s };
+sub rtrim { my $s = shift; $s =~ s/\s+$//;       return $s };
+sub  trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
+
+sub in_array($@) {
+   my $needle = shift(@_);
+   my %items = map {$_ => 1} @_;
+   return (exists($items{$needle})) ? 1 : 0;
+}
+
+sub verify_performance_data {
+  my $key;
+  my $value;
+
+  my $cpu = 0;
+  my $commands = 0;
+  my $latency = 0;
+
+  print "\nNow checking performance data:\n" if (defined $debug);
+
+  if ( ! defined ($response = $session->get_table($cpqDaCntlrPerfEntry))) {
+    printf(" - %-35s - OID-tree %s not found\n", "cpqDaCntlrPerfEntry", $cpqDaCntlrPerfEntry) if (defined $debug);
+  } else {
+    while (($key, $value) = each %{$response}) {
+      printf(" * %-35s = %s\n", $key, $value) if (defined $debug);
+
+      if    ($key =~ /^${cpqDaCntlrPerfCpuPercentBusy}/) { $cpu      = int $value; }
+      elsif ($key =~ /^${cpqDaCntlrPerfCommandCount}/)   { $commands = int $value; }
+      elsif ($key =~ /^${cpqDaCntlrPerfAvgLatency}/)     { $latency  = int $value; }
+    }
+  }
+
+  # verify CPU information
+  $cpu = 'unknown' if ($cpu == -1);
+  printf(" * %-35s = %s", "cpqDaCntlrPerfCpuPercentBusy", $cpu) if (defined $debug);
+  if (defined $maxcpu && $maxcpu < $cpu) {
+    printf(" CPU too busy (%s%%/%s%%)", $maxcpu, $cpu);
+    $state = 'WARNING' if ($state ne 'CRITICAL');
+  }
+  printf("\n") if (defined $debug);
+
+  # verify command count
+  printf(" * %-35s = %s", "cpqDaCntlrPerfCommandCount", $commands) if (defined $debug);
+  if (defined $maxcommands && $maxcommands < $commands) {
+    printf(" too many commands counted (%s%%/%s%%)", $maxcommands, $commands);
+    $state = 'WARNING' if ($state ne 'CRITICAL');
+  }
+  printf("\n") if (defined $debug);
+
+  # verify average latency
+  printf(" * %-35s = %s", "cpqDaCntlrPerfAvgLatency", $latency) if (defined $debug);
+  if (defined $maxlatency && $maxlatency < $latency) {
+    printf(" average latency too high (%s%%/%s%%)", $maxlatency, $latency);
+    $state = 'WARNING' if ($state ne 'CRITICAL');
+  }
+
+  if (defined $debug) {
+    return "\n";
+  } else {
+    return sprintf("|cpqDaCpu=%s cpqDaCmdCount=%s cpqDaAvgLatency=%s", $cpu, $commands, $latency);
+  }
+}
+
+sub print_system_information {
+  my $key;
+  my $value;
+
+  my $si = ""; # system information (response string)
+  my $pn = ""; # cpqSiProductName
+  my $ff =  0; # cpqSiFormFactor
+  my $sn = ""; # cpqSiSysSerialNum
+  my $at = ""; # cpqSiAssetTag
+
+  printf("cpqSystemInfo OID-tree (key-value pairs):\n") if (defined $debug);
+  if ( ! defined ($response = $session->get_table($cpqSystemInfo))) {
+    printf(" - %-35s - OID-tree %s not found\n", "cpqSystemInfo", $cpqSystemInfo) if (defined $debug);
+  } else {
+    while (($key, $value) = each %{$response}) {
+      printf(" * %-35s = %s\n", $key, $value) if (defined $debug);
+      if    ($key =~ /^${cpqSiProductName}/)  { $pn = rtrim($value); }
+      elsif ($key =~ /^${cpqSiFormFactor}/)   { $ff = int $value;    }
+      elsif ($key =~ /^${cpqSiSysSerialNum}/) { $sn = rtrim($value); }
+      elsif ($key =~ /^${cpqSiAssetTag}/)     { $at = rtrim($value); }
+    }
+
+    $si = ($pn eq "") ? 'unknown model' : $pn;
+    if ($ff > 0)   { $si .= ' (' . $cpqFormFactors{$ff} . ')'; }
+    if ($sn ne "") { $si .= ' S/N ' . $sn; }
+    if ($at ne "") { $si .= ' AssetTag ' . $at; }
+
+    print "\n" if (defined $debug);
+    print $si;
+    print "\n" if (defined $debug);
+  }
+}
+
+#
+# $_[0] component OID
+# $_[1] component name
+# $_[2] component type
+#
+sub fetch_status {
+  my $value;
+
+  if ($_[1] eq "cpqHeEventLogCondition") {
+    if ( ! defined ($response = $session->get_request($_[0]))) {
+      printf(" - %-35s - %s (OID %s not found, ignoring)\n", $_[3], $_[1], $_[0]) if (defined $debug);
+      # tree not found, ignore!
+      return -1;
+    }
+  } elsif ( ! defined ($response = $session->get_table($_[0]))) {
+    printf(" - %-35s - %s (OID-tree %s not found, ignoring)\n", $_[3], $_[1], $_[0]) if (defined $debug);
+    # tree not found, ignore!
+    return -1;
+  }
+
+  while (($key, $value) = each %{$response}) {
+    my $component_unit = $_[3] . '.' . substr($key, length($_[0])+1);
+    my $component_value = $_[3] . '=' . $value;
+    if ($value > 2) {
+      # 1 = other/unknow  => assume OK
+      # 2 = ok            => OK
+      # 3 = failure/worse => CRITICAL/WARNING
+      if (in_array($component_unit, @all_exclude)) {
+        next;
+      } elsif ((in_array($key, @all_warnings) || in_array($component_value, @all_warnings)) && $state ne 'CRITICAL') {
+        printf("critical state reduced to warning because of setting %s\n", $component_value) if (in_array($component_value, @all_warnings) && defined $debug);
+        $state = 'WARNING';
+      } else {
+        $state = 'CRITICAL';
+      }
+    }
+    if (defined $debug || $value > 2) {
+      # eval to something like '$cpqGenericStates{$value}'
+      my $stateValue = eval("\$" . $_[2] . "{" . $value . "}");
+      my $keyInfo = (defined $key && (length($key) > (length($_[0])+2))) ? (substr($key, length($_[0])+1) . ": ") : "";
+
+      if (defined $debug) {
+        printf(" * %-35s = %s [%s (%s%s)]\n", $component_unit, $value, $_[1], $keyInfo, $stateValue);
+      } else {
+        printf(" %s (%s%s)", $_[1], $keyInfo, $stateValue);
+      }
+    }
+    $countComponents++;
+  }
+  return 0;
+}
+
+sub usage() {
+  printf("\nMissing arguments!\n\n");
+  printf("Usage:\n\n");
+  printf("%s -H <HOSTNAME> [-C <community>] [-d] [-x excludecomponent1,excludecomponent2,...]\n", $PROGNAME);
+  printf("Copyright (C) 2008-2015 Guenther Mair\n\n");
+  printf("See '%s --help' for details.\n", $PROGNAME);
+  printf("\n\n");
+  exit $ERRORS{"UNKNOWN"};
+}
+
+sub print_help() {
+  printf("%s plugin\n", $PROGNAME);
+  printf("\n+---------+---------+---------+---------+---------+---------+---------+---------\n\n");
+  printf("Module specific parameters\n\n");
+  printf("  -d (--debug)        debug / verbose mode (print checked details)\n");
+  printf("  -x (--exclude)      exclude components from check (separate by commas, may\n");
+  printf("                      also contain the special value 'cpqSystemInfo')\n");
+  printf("  -w (--warnings)     use warnings instead of criticals for these components\n");
+  printf("                      (separate by commas) specific values to be selected may\n");
+  printf("                      be specified as in '-w cpqNicIfLogMapStatus=6'\n");
+  printf("  -r (--required)     report critical if any of these components is not found\n");
+  printf("                      (separate by commas)\n");
+  printf("\n+---------+---------+---------+---------+---------+---------+---------+---------\n\n");
+  printf("Currently the module supports the following components\n\n  * " . join(",\n  * ", keys %cpqComponents) . "\n");
+  printf("\n+---------+---------+---------+---------+---------+---------+---------+---------\n\n");
+  printf("Smarty Array specific parameters (not verified by default)\n\n");
+  printf("  -c (--maxcpu)       maximum cpu busy value the array controller (percent)\n");
+  printf("  --maxcommands       maximum number of read/write commands per second\n");
+  printf("  --maxlatency        maximum average command latency in 1/100000 second units\n");
+  printf("  --perfdata          gather performance data only (you will also get performance\n");
+  printf("                      data output if using any of the commands above):\n\n");
+  printf("                      (a) cpqDaCpu (cpqDaCntlrPerfCpuPercentBusy)\n");
+  printf("                      (b) cpqDaCmdCount (cpqDaCntlrPerfCommandCount)\n");
+  printf("                      (c) cpqDaAvgLatency (cpqDaCntlrPerfAvgLatency)\n");
+  printf("\n+---------+---------+---------+---------+---------+---------+---------+---------\n\n");
+  printf("SNMP parameters\n\n");
+  printf("  -H (--hostname)     hostname to query (required)\n");
+  printf("  -C (--community)    SNMP read community (defaults to public, used with SNMP\n");
+  printf("                      v1 and v2c)\n");
+  printf("  -v (--snmpversion)  1 for SNMP v1 (default)\n");
+  printf("                      2 for SNMP v2c\n");
+  printf("                      SNMP v2c will use get_bulk for less overhead\n");
+  printf("  -L (--seclevel)     choice of 'noAuthNoPriv', 'authNoPriv', or 'authPriv'\n");
+  printf("  -U (--secname)      username for SNMPv3 context\n");
+  printf("  -a (--authproto)    authentication protocol (MD5 or SHA1)\n");
+  printf("  -A (--authpass)     authentication password (cleartext ASCII or localized key\n");
+  printf("                      in hex with 0x prefix generated by using 'snmpkey'\n");
+  printf("                      utility auth password and authEngineID)\n");
+  printf("  -X (--privpass)     privacy password (cleartext ASCII or localized key\n");
+  printf("                      in hex with 0x prefix generated by using 'snmpkey'\n");
+  printf("                      utility privacy password and authEngineID)\n");
+  printf("  -p (--port)         SNMP port (default 161)\n");
+  printf("  -M (--maxmsgsize)   max message size - usefull only for v1 or v2c\n");
+  printf("  -t (--timeout)      seconds before the plugin times out (default=%s)\n", $TIMEOUT);
+  printf("  -V (--version)      plugin version\n");
+  printf("  -h (--help)         show this usage screen\n\n");
+  print_revision($PROGNAME, '$Revision: 73 $');
+}
+
+sub process_arguments() {
+  $status = GetOptions(
+    "V"   => \$opt_V,        "version"        => \$opt_V,
+    "h"   => \$opt_h,        "help"           => \$opt_h,
+    "d"   => \$debug,        "debug"          => \$debug,
+    "c=i" => \$maxcpu,       "maxcpu=i"       => \$maxcpu,
+                             "maxcommands=i"  => \$maxcommands,
+                             "maxlatency=i"   => \$maxlatency,
+                             "perfdata"       => \$collect_perfdata,
+    "x=s" => \$exclude,      "exclude=s"      => \$exclude,
+    "w=s" => \$warnings,     "warnings=s"     => \$warnings,
+    "r=s" => \$required,     "required=s"     => \$required,
+    "v=i" => \$snmpversion,  "snmpversion=i"  => \$snmpversion,
+    "C=s" => \$community,    "community=s"    => \$community,
+    "L=s" => \$seclevel,     "seclevel=s"     => \$seclevel,
+    "a=s" => \$authproto,    "authproto=s"    => \$authproto,
+    "U=s" => \$secname,      "secname=s"      => \$secname,
+    "A=s" => \$authpass,     "authpass=s"     => \$authpass,
+    "X=s" => \$privpass,     "privpass=s"     => \$privpass,
+    "p=i" => \$port,         "port=i"         => \$port,
+    "H=s" => \$hostname,     "hostname=s"     => \$hostname,
+    "M=i" => \$maxmsgsize,   "maxmsgsize=i"   => \$maxmsgsize,
+    "t=i" => \$timeout,      "timeout=i"      => \$timeout,
+  );
+
+  @all_exclude = split(/,/, $exclude);
+  @all_warnings = split(/,/, $warnings);
+  @all_required = split(/,/, $required);
+
+  if ($status == 0) {
+    print_help();
+    exit $ERRORS{'OK'};
+  }
+
+  if ($opt_V) {
+    print_revision($PROGNAME,'$Revision: 73 $');
+    exit $ERRORS{'OK'};
+  }
+
+  if ($opt_h) {
+    print_help();
+    exit $ERRORS{'OK'};
+  }
+
+  if ( ! utils::is_hostname($hostname)) {
+    usage();
+    exit $ERRORS{"UNKNOWN"};
+  }
+
+  $timeout = $TIMEOUT unless (defined $timeout);
+
+  if ($snmpversion =~ /3/) {
+    # Must define a security level even though default is noAuthNoPriv
+    # v3 requires a security username
+    if (defined $seclevel && defined $secname) {
+
+      # Must define a security level even though defualt is noAuthNoPriv
+      unless (grep /^$seclevel$/, qw(noAuthNoPriv authNoPriv authPriv)) {
+        usage();
+        exit $ERRORS{"UNKNOWN"};
+      }
+
+      # Authentication wanted
+      if ($seclevel eq 'authNoPriv' || $seclevel eq 'authPriv') {
+        unless ($authproto eq 'MD5' || $authproto eq 'SHA1') {
+          usage();
+          exit $ERRORS{"UNKNOWN"};
+        }
+
+        if ( ! defined $authpass) {
+          usage();
+          exit $ERRORS{"UNKNOWN"};
+        } else {
+          $auth = ($authpass =~ /^0x/) ? "-authkey => $authpass" : "-authpassword => $authpass";
+        }
+      }
+
+      # Privacy (DES encryption) wanted
+      if ($seclevel eq 'authPriv') {
+        if ( ! defined $privpass) {
+          usage();
+          exit $ERRORS{"UNKNOWN"};
+        } else {
+          $priv = ($privpass =~ /^0x/) ? "-privkey => $privpass" : "-privpassword => $privpass";
+        }
+      }
+    } else {
+      usage();
+      exit $ERRORS{'UNKNOWN'}; ;
+    }
+  } # end snmpv3
+
+  # start snmpv1 / snmpv2
+  if ($snmpversion =~ /[12]/) {
+    ($session, $error) = Net::SNMP->session(
+      -hostname   => $hostname,
+      -community  => $community,
+      -port       => $port,
+      -version    => $snmpversion,
+      -maxmsgsize => $maxmsgsize
+    );
+
+    if ( ! defined($session)) {
+      $state = 'UNKNOWN';
+      $answer = $error;
+      printf("%s: %s\n", $state, $answer);
+      exit $ERRORS{$state};
+    }
+  } elsif ($snmpversion =~ /3/) {
+    if ($seclevel eq 'noAuthNoPriv') {
+      ($session, $error) = Net::SNMP->session(
+        -hostname => $hostname,
+        -port     => $port,
+        -version  => $snmpversion,
+        -username => $secname
+      );
+    } elsif ($seclevel eq 'authNoPriv') {
+      ($session, $error) = Net::SNMP->session(
+        -hostname     => $hostname,
+        -port         => $port,
+        -version      => $snmpversion,
+        -username     => $secname,
+        $auth,
+        -authprotocol => $authproto
+      );
+    } elsif ($seclevel eq 'authPriv') {
+      ($session, $error) = Net::SNMP->session(
+        -hostname     => $hostname,
+        -port         => $port,
+        -version      => $snmpversion,
+        -username     => $secname,
+        $auth,
+        -authprotocol => $authproto,
+        $priv
+      );
+    }
+
+    if ( ! defined($session)) {
+      $state = 'UNKNOWN';
+      $answer = $error;
+      printf("%s: %s\n", $state, $answer);
+      exit $ERRORS{$state};
+    }
+
+  } else {
+    $state = 'UNKNOWN';
+    printf("%s: No support for SNMP v%s yet\n", $state, $snmpversion);
+    exit $ERRORS{$state};
+  }
+}
