@@ -135,26 +135,35 @@ if raw_input('Do you want to use "check_hp" for hardware monitoring? (N/y)').low
                     print('*** check_hp will be used for %s' % ip)
                     hpSppIps.append(ip)
 
+checkInterfaces = False
+interfaceMatch = ''
+if omsaIps or hpSppIps:
+    if raw_input('Do you want to enable a SNMP interface check? (N/y)').lower().strip() == 'y':
+        interfaceMatch = raw_input('RegEx rule to match interfaces (default: ^eth):').strip()
+        if not interfaceMatch:
+            interfaceMatch = '^eth'
+        checkInterfaces = True
+
 configurationString += """define hostgroup {{
-    hostgroup_name              {ClusterName}
-    alias                       {ClusterName} Cluster
+        hostgroup_name              {ClusterName}
+        alias                       {ClusterName} Cluster
 }}
 
 define host{{
-    use                         generic-host
-    hostgroups                  {ClusterName}
-    name                        {ClusterName}
-    _user                       {ExaOpUser}
-    _password                   {ExaOpPwd}
-    _logserviceId               {LogServiceId}
-    register                    0
+        use                         generic-host
+        hostgroups                  {ClusterName}
+        name                        {ClusterName}
+        _user                       {ExaOpUser}
+        _password                   {ExaOpPwd}
+        _logserviceId               {LogServiceId}
+        register                    0
 }}
 
 define host{{
-    use                         {ClusterName}
-    host_name                   {ClusterName}-license
-    alias                       {ClusterName} License
-    address                     {LicenseServerAddr}
+        use                         {ClusterName}
+        host_name                   {ClusterName}-license
+        alias                       {ClusterName} License
+        address                     {LicenseServerAddr}
 }}
 
 """.format(**{
@@ -179,12 +188,11 @@ for ip in clusterNodeIps:
         hpSppNodes.append('%s-node%i' % (clusterName, nodeIterator))
 
     configurationString += """define host{{
-    use                         {ClusterName}
-    host_name                   {ClusterName}-node{i}
-    alias                       {ClusterName} Node {i}
-    address                     {ip}
+        use                         {ClusterName}
+        host_name                   {ClusterName}-node{i}
+        alias                       {ClusterName} Node {i}
+        address                     {ip}
 }}
-
 """.format(**{
         'ClusterName'       : clusterName,
         'ip'                : ip,
@@ -246,7 +254,6 @@ for dbName in cluster.getDatabaseList():
         service_description     Free DB Space {Database}
         _database               {Database}
 }}
-
 """.format(**{
     'ClusterName'       : clusterName,
     'Database'          : dbName,
@@ -254,27 +261,52 @@ for dbName in cluster.getDatabaseList():
 
 if omsaIps:
     configurationString += """define service{{
-            use                     dell_check_omsa
-            host_name               {HostNames}
-            _community              {Community}
-    }}
-
-    """.format(**{
+        use                     dell_check_omsa
+        host_name               {HostNames}
+        _community              {Community}
+}}
+""".format(**{
         'HostNames'         : str(omsaNodes)[1:-1].replace("'", ""),
         'Community'         : dellSnmpCommunity
     })
 
 if hpSppIps:
     configurationString += """define service{{
-            use                     check_hp
-            host_name               {HostNames}
-            _community              {Community}
-    }}
-
-    """.format(**{
+        use                     check_hp
+        host_name               {HostNames}
+        _community              {Community}
+}}
+""".format(**{
         'HostNames'         : str(hpSppNodes)[1:-1].replace("'", ""),
         'Community'         : hpSnmpCommunity
     })
+
+if checkInterfaces:
+    snmpCommunity = ''
+    if   dellSnmpCommunity:
+        snmpCommunity = dellSnmpCommunity
+        snmpNodes = omsaNodes 
+
+    elif hpSnmpCommunity:
+        snmpCommunity = hpSnmpCommunity
+        snmpNodes = hpSppNodes 
+
+    else:
+        snmpCommunity = None;
+
+    if snmpCommunity:
+        configurationString += """define service{{
+        use                     exasol_check_snmp_interfaces
+        host_name               {HostNames}
+        _community              {Community}
+        _interfacematch         {InterfaceMatch}
+}}
+
+""".format(**{
+            'HostNames'         : str(snmpNodes)[1:-1].replace("'", ""),
+            'Community'         : snmpCommunity,
+            'InterfaceMatch'    : interfaceMatch
+        })
 
 configFilename = '/etc/nagios3/conf.d/exa_%s.cfg' % clusterName
 f = open(configFilename, 'w')
