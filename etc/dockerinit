@@ -2,9 +2,13 @@
 chmod u+s /bin/ping /bin/ping6
 generate-certificate
 download-odbc-driver
-LC_ALL=C service nagios3 start
-LC_ALL=C service npcd start
-LC_ALL=C service lighttpd start
+service cron start
+
+(LC_ALL=C 
+    service nagios3 start;
+    service npcd start;
+    service lighttpd start;
+)
 
 #don't close init process:
 while true; do sleep 60; done;
