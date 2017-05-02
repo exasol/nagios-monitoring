@@ -1,0 +1,60 @@
+
+FAQ / TROUBLE SHOOTING HINTS
+
+1) Error hints on the start of the plugins
+
+	- Plugin was not found - reason: copied in unused path
+		Please check the path USER1 in resource.cfg of the installed Nagios variant.
+		The plugin must be copied in this directory !
+
+	- exit code -1 and system error texts for the call of the plugin
+		Please check owner and access rights of the plugin. The plugin must
+		have the same rights like the other plugins.
+
+	- Hints on missing Perl components or missing scripts or executables
+		Check installation of required components
+
+2) Error hint during the run of the plugins
+
+	- Perl error concerning uninitialized variables
+		Please inform the SVNagios developer team and send corresponding perl message
+		and send version of the plugin.
+
+3) Interface Documentation (Fujitsu Server Plug-ins for Nagios Core)
+	http://manuals.ts.fujitsu.com/
+	Search for: Plug-ins for Nagios
+
+	This documentation contains among other detailed information about:
+	  - Installation and Configuration
+	  - Usage of the Plug-in
+	
+		
+4) Documents which should be provided in case of service call:
+	- Version of Fujitsu Server Plug-in for Nagios Core
+
+	- Error message received, probably Screenshot
+
+	- Description "how to create the issue"
+
+	- If Nagios GUI is used: Nagios GUI Application/Version
+
+	- If Script has been executed:
+	  - calling parameter
+	  - Output of stdout and stderr
+
+	  - Installed versions of required packages (depends on usage)
+	  - Perl Net::SNMP
+	  - Openwsman
+	  - WBEM
+
+	- Nagios/Icinga Logfile (if applicable)
+		For Nagios and Icinga the path of the logfile is defined in section log_file of main configuration file
+		e.g.: 
+		/usr/local/icinga/etc/icinga.cfg
+		/usr/local/nagios/etc/nagios.cfg
+		e.g.: 
+		log_file=/usr/local/icinga/var/icinga.log
+		log_file=/usr/local/nagios/var/nagios.log
+		
+
+	

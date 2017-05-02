@@ -1,0 +1,57 @@
+###############################################################################
+# File:		any definitions around SNMP inventory for all SNMP hostgroups
+# Format:	NagiosCore
+#
+# Author:	Fujitsu Technology Solutions
+# Version:      3.30.02
+# LastChange:	3.20.00
+# Date:		2015-03-18
+#
+# These configuration files are samples for a Nagios-Core integration.
+# Please copy or integrate these files into your Nagios-Core system.
+#
+# Hint about $_HOSTSV_OPTIONS$
+#       The plugin can work without these options ! (Default -Cpublic -p161).
+#       Use _SV_OPTIONS in host definition to set 
+#	- SNMP2 community or 
+#	- SNMP3 options or
+#       - non-standard SNMP port or 
+#	- usage of option input file (option -I) or
+#       - administration address (iRMC) (option -A)
+#       You are free to rename these MACROS or add MACROS.
+#
+# Expects $USER1$ = plugin directory (see resources.cfg)
+###############################################################################	
+
+define command {
+	command_name              	inventory_fujitsu_server
+	command_line              	$USER1$/inventory_fujitsu_server.pl -H $HOSTADDRESS$ $_HOSTSV_OPTIONS$ $ARG1$
+	register                  	1
+}
+
+####
+
+define service {
+	hostgroup_name            	all-fujitsu-servers,all-fujitsu-servers-iRMC-SNMP
+        service_description             SV System Inventory
+        servicegroups                   serverview
+        use                             generic-service
+        check_command                   inventory_fujitsu_server!--inventory
+        active_checks_enabled           1
+        passive_checks_enabled          0
+        check_period                    none
+        register                        1
+}
+
+define servicedependency {
+    dependent_service_description 	SV System Inventory
+    hostgroup_name 			all-fujitsu-servers,all-fujitsu-servers-iRMC-SNMP
+    service_description 		SV SNMP Uptime
+    execution_failure_criteria 		w,u,c
+    notification_failure_criteria 	w,u,c
+    inherits_parent			1
+}
+
+###############################################################################
+# END OF FILE
+###############################################################################

@@ -1,0 +1,62 @@
+--- check_hp.orig	2017-04-13 12:45:13.535160436 +0000
++++ check_hp	2017-04-13 12:45:44.687160069 +0000
+@@ -39,7 +39,6 @@
+ 
+ use POSIX;
+ use strict;
+-
+ use lib $libexec;
+ use utils qw($TIMEOUT %ERRORS &print_revision &support);
+ 
+@@ -96,7 +95,7 @@
+ my $community = "public";
+ my $snmpversion = 1;
+ my $maxmsgsize = 1472; # Net::SNMP default is 1472
+-my ($seclevel, $authproto, $secname, $authpass, $privpass, $auth, $priv);
++my ($seclevel, $authproto, $secname, $authpass, $privpass, %auth, %priv);
+ my $context = "";
+ my $port = 161;
+ my @snmpoids;
+@@ -694,17 +693,17 @@
+           usage();
+           exit $ERRORS{"UNKNOWN"};
+         } else {
+-          $auth = ($authpass =~ /^0x/) ? "-authkey => $authpass" : "-authpassword => $authpass";
++          %auth = ($authpass =~ /^0x/) ? ("-authkey",  "$authpass") : ("-authpassword", "$authpass");
+         }
+       }
+ 
+-      # Privacy (DES encryption) wanted
++      # Privacy (AES encryption) wanted
+       if ($seclevel eq 'authPriv') {
+         if ( ! defined $privpass) {
+           usage();
+           exit $ERRORS{"UNKNOWN"};
+         } else {
+-          $priv = ($privpass =~ /^0x/) ? "-privkey => $privpass" : "-privpassword => $privpass";
++          %priv = ($privpass =~ /^0x/) ? ("-privkey", "$privpass") : ("-privpassword", "$privpass");
+         }
+       }
+     } else {
+@@ -743,7 +742,7 @@
+         -port         => $port,
+         -version      => $snmpversion,
+         -username     => $secname,
+-        $auth,
++        %auth,
+         -authprotocol => $authproto
+       );
+     } elsif ($seclevel eq 'authPriv') {
+@@ -752,9 +751,10 @@
+         -port         => $port,
+         -version      => $snmpversion,
+         -username     => $secname,
+-        $auth,
++        %auth,
+         -authprotocol => $authproto,
+-        $priv
++        %priv,
++        -privprotocol => 'AES'
+       );
+     }
+ 

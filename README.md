@@ -20,8 +20,8 @@ Log into EXAoperation web interface with a user which has Administrator or Maste
 Assign the correct role to the new user by clicking "Roles". The default role for new users is "User", but not all XMLRPC functions used by the plugins can be used by this role. That's why you have to change the role to "Supervisor".
 !pic4.png|thumbnail!
 
-### Grant read-only access to all volumes
-Add that user to all available EXAStorage volumes. Having read-only access to all volumes is necessary to be able to calculate the free, available space for the databases. A full explanation about calculating the free disk space can be found in SOL-366.
+### Grant read-only access to all data and archive volumes 
+Add that user to all available EXAStorage volumes - not including any temporary volumes (which are system-managed). Having read-only access to all volumes is necessary to be able to calculate the free, available space for the databases. A full explanation about calculating the free disk space can be found in SOL-366.
 
 Granting access for a specific EXAStorage volume can be done by clicking on "EXAStorage" in the EXAoperation web interface and choosing the desired volume by clicking on the volume name. Now you can edit the volume settings, add the monitoring user to the "Read-only Users" list and apply the changes. This has to be done on all existing volumes.
 ![EXAStorage](/images/pic11.png)
@@ -116,6 +116,7 @@ You can download the generated configuration files using the Nagios web interfac
 
 ## Troubleshooting / Known problems
 * on Windows docker hosts you need to start your command line prompt (CMD.EXE) with administrator privileges, otherwise pulling the image won't work properly
+* if you got an error like "WARNING - internal error <Fault -1: 'Volume could not be found'>" from check\_db\_diskspace plugin please check your permissions on the EXAStorage volumes and make sure that you didn't change the system labels of those volumes (create own labels if you want to tag them instead of renaming the given ones).
 
 ## Bugs / Questions / Support
 If you have questions or found some bugs, you can inform us using our Community Portal: https://www.exasol.com/portal/questions

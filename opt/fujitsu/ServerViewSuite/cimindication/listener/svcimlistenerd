@@ -1,0 +1,980 @@
+#!/usr/bin/perl
+
+# Implementation of the CIM listener daemon
+
+# ATTENTION: This script writes into /var/run which requires root access
+
+# version string
+our $version = '3.30.02';
+# Version:	3.20.00
+# Date:		2015-08-10
+
+use strict;
+use warnings;
+use Socket;
+use Socket6;
+use POSIX;
+use POSIX qw(setsid strftime);
+use Fcntl qw(:DEFAULT :flock :seek);
+use FindBin;
+use File::Basename;
+use File::Spec::Functions;
+use Getopt::Std;
+use threads;
+use threads::shared;
+use Data::Dumper;
+use IO::Select;
+#use IO::Socket::SSL qw(debug4);
+use IO::Socket::SSL;
+#use Net::SSLeay;
+use Pod::Usage;
+use NetAddr::IP;
+use Sys::Syslog;
+use XML::Twig;
+use Time::HiRes qw/gettimeofday/;
+use Time::Local;
+use vars qw($fd $log_fname $error_message);
+
+# Set autoflush
+$| = 1;
+
+# Get listener basename and path and build default file and dirnames
+$main::scriptPath = undef;
+$main::scriptBasename = undef;
+$main::pidFile	= undef;
+$main::debugDir = undef;
+$main::logFile	= undef;
+$main::config	= undef;
+my $path = $0;
+$main::scriptPath = $path;
+$main::scriptPath =~ s/[^\/]+$//;
+$main::scriptBasename = $1 if ($path =~ m/([^\/]+)$/); # Should ALWAYS work
+$main::scriptBasename =~ s/\.pl$//;
+$main::pidFile	= '/var/run/' . $main::scriptBasename . '.pid';
+$main::debugDir	= '/var/log/fujitsu/svcimlistener/data';
+$main::logFile	= '/var/log/fujitsu/svcimlistener/' . $main::scriptBasename . '.log';
+$main::config	= '/etc/' . $main::scriptBasename . '.conf';
+
+#    NAME        => 'cimlistenerd',
+#    PID_FILE    => '/var/run/cimlistenerd.pid',
+
+use constant {
+    RUNNING             => 0,
+    NOT_RUNNING         => 3,
+    NOT_PERMISSION      => 4,
+};
+
+# setting up signal handlers
+$SIG{INT}  = \&signal_handler;
+$SIG{TERM} = \&signal_handler;
+
+# Filename format
+# <timestamp>_<ip>.xml
+# Contents: XML indication
+our $SELF;
+
+# global variable to stop listener cycle
+our $Stop = 0;
+
+our $NoDetach = 0;
+
+our $DebugLevel = 0;
+
+# Global config hash
+our %Config = ();
+
+# Root OID prefix
+our $root_OID = "1.3.6.1.4.1.231.2.10.2.13.";
+
+our $StartTime = gettimeofday();
+
+# simple logger
+sub logger {
+    my $msg;
+    my $text = shift;
+    my $level = shift || 0;
+    my $id = threads->tid();
+    if ( $level <= $DebugLevel ) {
+	my $threadstring = sprintf ("%04d", $id);
+        $msg = strftime("[%d/%b/%Y:%H:%M:%S]", localtime) . " [$threadstring] $text\n";
+        if ($log_fname and $NoDetach == 0) {
+            $fd = _open_log_file($log_fname) unless $fd;
+            _write_log( $msg ) if $fd;
+        } else {
+            print STDOUT $msg;
+        }
+    }
+    return;
+}
+
+sub log_error {
+    $error_message = shift;
+    logger($error_message, 0);
+    syslog('err', $error_message);
+    return;
+}
+
+sub _open_log_file {
+    my $file = shift;
+    my $fd;
+    sysopen $fd, $file, O_WRONLY | O_CREAT | O_SYNC | O_APPEND or return;
+    flock $fd, LOCK_EX;
+    return $fd;
+}
+
+sub _write_log {
+    return unless $fd;
+    my $string = shift;
+    my $bytes = length $string;
+    sysseek $fd, 0, SEEK_END;
+    syswrite $fd, $string, $bytes;
+    return $bytes;
+}
+
+sub signal_handler {
+    syslog('info', 'Received termination signal...');
+    unlink($main::pidFile);
+    # stop main socket cycle
+    $Stop = 1;
+}
+
+sub daemonize {
+    my $pid = undef;
+
+    # Fork and exit parent
+    exit if $pid = fork;
+
+    # Detach from controlling terminal
+    POSIX::setsid() or die "Can't start a new session: $!";
+
+    # Fork and exit parent
+    exit if $pid = fork;
+
+    chdir '/';
+    umask 0;
+
+    # Map stderr, stdout, stdin to /dev/null
+    foreach my $i (0 .. 2) { POSIX::close($i); }
+    open STDIN, '+>/dev/null'   or die "Can't read /dev/null: $!";
+    open STDOUT, '+>&STDIN' or die "Can't write to /dev/null: $!";
+    open STDERR, '+>&STDIN' or die "Can't write to /dev/null: $!";
+    write_pid();
+
+    umask 0;
+}
+#### DIRECOTY HELPER
+  sub checkDirectory { # copy from nagios plugin
+        my $dir = shift;
+	my $modesDir = 0;
+	$modesDir++ if ( -r $dir );
+	$modesDir++ if ( -w $dir );
+	$modesDir++ if ( -x $dir );
+	$modesDir++ if ( -d $dir );
+	return $modesDir;
+  } #checkDirectory
+  sub handleOutputDirectory {  # copy from nagios plugin
+	my $outdir = shift;
+	my $modesOutDir = checkDirectory($outdir);
+	if (!$modesOutDir) {
+	    if (! mkdir $outdir, 0700) {
+	    log_error "ERROR - Can't create output directory $outdir";
+	    #$exitCode = 2;
+	    return;
+	    }
+	} elsif ($modesOutDir < 4) {
+	    log_error "ERROR - output directory $outdir exists but has not enough access rights";
+	    #$exitCode = 2;
+	    return;
+	}
+  } #handleOutputDirectory
+####
+sub build_file_base {
+    my $ip = shift;
+
+    # grab the current time
+    my @now = localtime();
+
+    # rearrange the following to suit your stamping needs.
+    # it currently generates YYYYMMDDhhmmss
+    my $timestamp = sprintf("%04d%02d%02d%02d%02d%02d",
+        $now[5]+1900, $now[4]+1, $now[3],
+        $now[2],      $now[1],   $now[0]);
+
+    my $id = threads->tid();
+
+    # insert stamp into constant portion of file name.
+    # the constant portion of the name could be included
+    # in the sprintf() above.
+    my $filename = $timestamp . "_$id" . "_$ip";
+    my $dir = $Config{DIR} || $main::debugDir;
+
+    handleOutputDirectory($dir);
+
+    return  catfile($dir, $filename);
+} #build_file_base
+
+sub build_filename { #UNUSED
+    my $ip = shift;
+
+    my $ext = shift;
+
+    # grab the current time
+    my @now = localtime();
+
+    # rearrange the following to suit your stamping needs.
+    # it currently generates YYYYMMDDhhmmss
+    my $timestamp = sprintf("%04d%02d%02d%02d%02d%02d",
+        $now[5]+1900, $now[4]+1, $now[3],
+        $now[2],      $now[1],   $now[0]);
+
+    my $id = threads->tid();
+
+    # insert stamp into constant portion of file name.
+    # the constant portion of the name could be included
+    # in the sprintf() above.
+    my $filename = $timestamp . "_$id" . "_$ip.$ext";
+    my $dir = $Config{DIR} || $main::debugDir;
+
+    handleOutputDirectory($dir);
+
+    return  catfile($dir, $filename);
+}
+
+sub save_data {
+    my ($filename, $data) = @_;
+    return if (!$data or !$filename);
+
+    if( -e dirname($filename) and -d _ and -w _ ) { # Path exists. Done.
+	logger("Try to write $filename\n",7);
+        open my $out_fh, '+>', $filename or log_error "Couldn't open out file: $!\n";
+	if ($out_fh) {
+	    print $out_fh $data;
+	    close $out_fh or log_error "Couldn't close out file: $!\n";
+	}
+    } else {
+        log_error "Directory path for storing data doesn't exist or permissions unavailable. Check your config file.\n";
+    }
+}
+
+sub check_cim_indication {
+    my $data = shift;
+
+    my $twig = XML::Twig->new();
+    if ($twig->safe_parse($data) == 0) {
+        logger("Error while parsing received data", 1);
+        return 0;
+    }
+
+    my $root_tag = $twig->root->name;
+    logger("Received document root tag: $root_tag", 5);
+
+    if ($root_tag eq "CIM") {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+sub parse_xml_cim {
+    my ($data, $requestor_ip) = @_;
+
+    my %parsed_values;
+
+    my $twig = new XML::Twig(twig_handlers => {
+            PROPERTY => sub { $parsed_values{$_->att("NAME")} = $_->children_trimmed_text; }
+        });
+    $twig->parse($data);
+
+    for (keys %parsed_values) {
+	my $val = $parsed_values{$_};
+        logger("-> $_: $parsed_values{$_}", 5) if ($val);
+	logger("-> $_: $parsed_values{$_}", 8) if (!$val);
+    }
+
+    my $sub_OID = $root_OID;
+
+    if ($parsed_values{'EventID'} =~ /^LogMessage_/) {
+        $sub_OID .= "2.";
+
+        logger("Found ErrorCode ${parsed_values{'ErrorCode'}}", 5);
+        $sub_OID .= int($parsed_values{'ErrorCode'});
+    } elsif ($parsed_values{'EventID'} =~ /^Driver MonitorMessage_/) {
+        $sub_OID .= "3.";
+
+        $sub_OID .= int($parsed_values{'ErrorCode'});
+    } else {
+        $sub_OID .= "1.";
+
+        my $perceived_severity = $parsed_values{'PerceivedSeverity'};
+        if ($perceived_severity eq "0") {
+            $sub_OID .= "1";
+        } elsif ($perceived_severity eq "1") {
+            $sub_OID .= "2";
+        } elsif ($perceived_severity eq "2") {
+            $sub_OID .= "3";
+        } elsif ($perceived_severity eq "3") {
+            $sub_OID .= "4";
+        } else {
+            $sub_OID .= "99";
+        }
+    }
+
+    my $host_address = $parsed_values{'HostAddress'};
+    my $event_time = timestamp_to_epoch($parsed_values{'EventTime'});
+    my $message = $parsed_values{'Message'};
+
+    my @origin_addresses = gethostbyname($parsed_values{'HostAddress'});
+    @origin_addresses = map { inet_ntoa($_) } @origin_addresses[4 .. $#origin_addresses];
+    $origin_addresses[0] //= $host_address;
+
+    my $requestor_name;
+    $requestor_name = gethostbyaddr(inet_aton($requestor_ip), AF_INET) or $requestor_name = $requestor_ip;
+    logger("Requestor IP: $requestor_ip", 5);
+    logger("Requestor name: $requestor_name", 5);
+
+    my $sys_uptime = script_uptime();
+
+    my $result_trap =
+      "$requestor_name\n" .
+      "$requestor_ip\n" .
+      ".1.3.6.1.2.1.1.3.0 $sys_uptime\n" .
+      ".1.3.6.1.6.3.1.1.4.1.0 $sub_OID\n" .
+      ".1.3.6.1.4.1.231.2.10.2.2.10.20.1.1.0 $host_address\n" .
+      ".1.3.6.1.4.1.231.2.10.2.2.10.20.1.2.0 $event_time\n" .
+      ".1.3.6.1.4.1.231.2.10.2.2.10.20.1.3.0 0\n" .
+      ".1.3.6.1.4.1.231.2.10.2.2.10.20.1.4.0 $message\n" .
+      ".1.3.6.1.6.3.18.1.3.0 $origin_addresses[0]\n" .
+      ".1.3.6.1.6.3.18.1.4.0 \"public\"\n";
+
+    logger("Resulting trap:\n$result_trap", 5);
+
+    return $result_trap;
+}
+
+
+# Converting timestamp from Datetime format described in
+# http://www.dmtf.org/sites/default/files/standards/documents/DSP0004_3.0.0.pdf
+sub timestamp_to_epoch {
+    my $timestamp = shift;
+    my ($year, $month, $day, $hour, $min, $sec, $usec, $offset_sign, $offset) =
+        $timestamp =~ /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\.(\d+)(\+|-)(\d+)$/x;
+
+    my $epoch = timegm($sec, $min, $hour, $day, $month - 1, $year - 1900);
+    if ($offset_sign eq "+") {
+        $epoch = $epoch - ($offset * 60);
+    } elsif ($offset_sign eq "-") {
+        $epoch = $epoch + ($offset * 60);
+    }
+
+    return $epoch;
+}
+
+# parses request line, like POST / HTTP/1.1
+sub parse_request {
+    my $socket = shift;
+    my $reqip = shift;
+    my $chunk;
+    my $peek;
+
+    # hack: peek the very first byte of SSL handshake
+    recv($socket, $peek, 1, MSG_PEEK | MSG_DONTWAIT);
+    if ($peek eq "\x16" or $peek eq "\x80") { # $peek eq "\xFFFFFF80"
+	# http://search.cpan.org/~sullr/IO-Socket-SSL-1.77/SSL.pm
+        logger("===> Detected SSL handshake request", 2);
+
+        my $ssl_ca_path = $Config{CA_PATH} || '/etc/ssl/certs'; # TODO ?
+        my $ssl_ca_file = $Config{CA_FILE};
+        my $ssl_cert_file = $Config{SSL_CERT};
+        my $ssl_key_file = $Config{SSL_KEY} || $Config{SSL_CERT};
+        my $ssl_passwd_cb = sub { return $Config{SSL_PASSWD}; };
+        my $ssl_verify_mode = SSL_VERIFY_NONE;
+        if( $Config{VERIFY_SSL} ) {
+            $ssl_verify_mode = SSL_VERIFY_PEER;
+        }
+	# SSL_version: 
+	#   cite: "The default SSL_version is 'SSLv23:!SSLv3:!SSLv2'"
+	#   Tests with openssl s_client show that SSLv3 is enabled
+	# SSL_cipher_list
+	#   cite: "To use OpenSSL builtin default (whatever this is) set it to ''. "
+	# SSL_dh_file
+	my $ssl_protocol	= $Config{"SSL_PROTOCOL"}	|| '';
+	my $ssl_cipher		= $Config{"SSL_CIPHERS"}	|| '';
+	my $ssl_dh_file		= $Config{"SSL_DH_FILE"}	|| '';
+
+        logger("SSL CA path\t: $ssl_ca_path", 4);
+        logger("SSL CA file\t: $ssl_ca_file", 4);
+        logger("SSL cert file\t: $ssl_cert_file", 4);
+        logger("SSL key file\t: $ssl_key_file", 4);
+        logger("SSL verify mode : $ssl_verify_mode", 4);
+	logger("SSL protocol\t: $ssl_protocol", 4);
+	logger("SSL cipher rule : $ssl_cipher", 4);
+	logger("SSL dh file\t: $ssl_dh_file", 4);
+
+        logger("Upgrading socket to SSL", 4);
+	my $sslOK=1;
+	# SSL_create_ctx_callback ... did not work !
+        IO::Socket::SSL->start_SSL($socket,
+            SSL_use_cert    => 1,
+            SSL_ca_path     => $ssl_ca_path,
+            SSL_ca_file     => $ssl_ca_file,
+            SSL_cert_file   => $ssl_cert_file,
+            SSL_key_file    => $ssl_key_file,
+            SSL_passwd_cb   => $ssl_passwd_cb,
+            SSL_server      => 1,
+            SSL_verify_mode => $ssl_verify_mode,
+            SSL_startHandshake => 0,
+	    SSL_cipher_list => $ssl_cipher,
+	    SSL_version	    => $ssl_protocol, 
+	    SSL_dh_file	    => $ssl_dh_file,
+        ) or $sslOK=0;
+
+	if (!$sslOK) {
+	    log_error("Could not convert socket to SSL ($reqip): $!") if (!$sslOK);
+	    return undef;
+	}
+        logger("Socket converted to SSL connection", 4);
+	# ... tests
+	#my $sslcontext = ${*$socket}{'_SSL_ctx'};
+	#if ($sslcontext and $sslcontext->isa('IO::Socket::SSL::SSL_Context') 
+	#and $sslcontext->{context})
+	#{
+	#    my $ssleayctx = $sslcontext->{context};
+	#}
+	#
+        if (!$socket->accept_SSL()) {
+	    my $stderr = $!;
+	    my $errstr = $socket->errstr(); # the function is enabled after conversion
+            log_error ("SSL-Handshake-Error for $reqip - Could not accept SSL connection: $errstr");
+            return undef;
+        }
+	{
+	    my $socketString = sprintf ("%s", $socket);
+            log_error ("Corrupt socket for $reqip") if ($socketString !~ m/IO::Socket/);
+	    return undef if ($socketString !~ m/IO::Socket/);
+	}
+        logger("Accepted SSL connection", 4);
+	# ... ATTENTION: $socket->get_sslversion() - kills the socket !
+    }
+
+    while (sysread($socket, my $buff, 1)) {
+        last if $buff eq "\n";
+        $chunk .= $buff;
+    }
+    logger("First line: $chunk", 7) if (defined $chunk);
+
+    defined($chunk) or return undef;
+    $_ = $chunk;
+
+    m/^(\w+)\s+(\S+)(?:\s+(\S+))?\r?$/;
+    my $method   = $1 || '';
+    my $uri      = $2 || '';
+    my $protocol = $3 || '';
+
+    return ( $method, $uri, $protocol );
+}
+
+# parse HTTP headers of a request
+sub parse_headers {
+    my $socket = shift;
+    my @headers;
+    my $chunk = '';
+
+    while ( sysread($socket, my $buff, 1 ) ) {
+        if ( $buff eq "\n" ) {
+            $chunk =~ s/[\r\l\n\s]+$//;
+            if ( $chunk =~ /^([^()<>\@,;:\\"\/\[\]?={} \t]+):\s*(.*)/i ) {
+                push @headers, $1 => $2;
+            }
+            last if ( $chunk =~ /^$/ );
+            $chunk = '';
+        }
+        else { $chunk .= $buff }
+    }
+
+    return ( \@headers );
+}
+
+# convert array of headers to a hash for further usage
+#
+# hash keys are converted to lower case because of different clients may
+# provide header names in different formats
+sub headers {
+    my $headers = shift;
+    my %hash;
+
+    while ( my ( $header, $value ) = splice @$headers, 0, 2 ) {
+        $hash{lc($header)} = $value;
+    }
+
+    return %hash;
+}
+
+# handles a particular incoming connection
+sub handle_connection {
+    my ($socket, $client_addr) = @_;
+
+    my $peeraddr;
+    my $family = sockaddr_family($client_addr);
+    if ($family == AF_INET) {
+        my ($client_port, $client_packed_ip) = sockaddr_in($client_addr);
+        my $rso = getpeername($socket);
+        (my $peerport, $peeraddr) = unpack_sockaddr_in($rso);
+        $peeraddr = &inet_ntop($family, $peeraddr);
+    } else {
+        my ($client_port, $client_packed_ip) = sockaddr_in6($client_addr);
+        my $rso = getpeername($socket);
+        (my $peerport, $peeraddr) = unpack_sockaddr_in6($rso);
+        $peeraddr = &inet_ntop($family, $peeraddr);
+    }
+
+    my $select = new IO::Select();
+    $select->add($socket);
+
+    logger("Accepted new client from: $peeraddr", 1);
+
+    if ($select->can_read(5)) {
+        logger("Processing request from $peeraddr", 1);
+        my($method, $url, $proto) = parse_request($socket, $peeraddr);
+
+        if (!defined($method) or $method =~ m/^\s*$/) { 
+            log_error "Received undefined value from parse_request. Closing connection.";
+	    my $socketString = sprintf ("%s", $socket);
+ 	    logger("socket is >>$socketString<<",7);
+	    undef $socket if ($socketString !~ m/IO::Socket/);
+ 	    logger("socket reset to undefined",7) if (!defined $socket);
+            $select->remove($socket) if ($socket);
+            close $socket if ($socket);
+            return;
+        }
+
+        # accept only POST requests from clients
+        if ( $method !~ /^POST$/ ) {
+            log_error "I don't understand method $method. Answering HTTP 400.";
+            $socket->syswrite("HTTP/1.1 400 BAD REQUEST\n");
+            $socket->syswrite("Content-Type: text/plain\n\n");
+            $socket->syswrite("BAD REQUEST\n");
+            $select->remove($socket);
+            close $socket;
+            return;
+        }
+
+        logger("Request line: $method, $url, $proto", 2);
+
+        my @headers = parse_headers($socket);
+        my %parsed_headers = headers(@headers);
+
+        # debug request headers
+        logger("Request headers:\n" . Dumper(\%parsed_headers), 2);
+
+        # check for corrupted Content-Length header
+        if (!defined($parsed_headers{lc('Content-Length')})) {
+            log_error "Content-lentgh is not defined. Answering HTTP 400.";
+            $socket->syswrite("HTTP/1.1 400 BAD REQUEST\n");
+            $socket->syswrite("Content-Type: text/plain\n\n");
+            $socket->syswrite("BAD REQUEST\n");
+            $select->remove($socket);
+            close $socket;
+            return;
+        }
+
+        # detected SFCB request
+        if (defined($parsed_headers{lc('Expect')}) and
+            $parsed_headers{lc('Expect')} eq "100-continue") {
+            logger("Detected SFCB client. Sending 100-Continue to response.", 2);
+            $socket->syswrite("HTTP/1.1 100 CONTINUE\n");
+        }
+
+        logger("<- Content-Length: $parsed_headers{lc('Content-Length')}, type: $parsed_headers{lc('Content-Type')}", 2);
+        # read body, max size of request is Content-Length
+        $socket->sysread(my $post_data, $parsed_headers{lc('Content-Length')});
+
+        # saving received XML only in case when debug level is high
+	my $debugFileBase = undef;
+	
+        if ($DebugLevel > 3) {
+	    $debugFileBase = build_file_base($peeraddr);
+            save_data("$debugFileBase" . ".xml", $post_data);
+        }
+
+        # Truncating received data to get rid of extra zeroes sent with
+        # indication by WMI CIM XML Event Handler
+        my $post_data_length = length($post_data);
+        logger("POST data length: $post_data_length", 5);
+        $post_data =~ s/\000+$//;
+        $post_data_length = length($post_data);
+        logger("POST data length after truncation: $post_data_length", 5);
+
+        if (check_cim_indication($post_data)) {
+            my $trap = parse_xml_cim($post_data, $peeraddr);
+
+            my $snmptt = $Config{SNMPTT_EXE} || 0;
+            if ($snmptt) {
+                open(my $handle, "| $snmptt") || log_error "Cannot run SNMPTT_EXE: $Config{SNMPTT_EXE}";
+                print $handle $trap;
+                close($handle);
+            } else {
+                log_error "SNMPTT_EXE is not set";
+            }
+            # saving generated trap if debug level is set high
+            if ($DebugLevel > 3) {
+                save_data("$debugFileBase" . ".trap", $trap);
+            }
+        }
+
+        $socket->syswrite("HTTP/1.1 200 OK\n");
+    } else {
+        log_error "Client from $peeraddr timeout";
+    }
+
+    logger("Removing socket from select", 4);
+    $select->remove($socket);
+
+    # finally disconnect a client
+    logger("Closing socket", 4);
+    close $socket;
+}
+
+sub run {
+    write_pid();
+
+    # Initializing debug logging here, all previous messages should have been
+    # handled through syslog.
+    $DebugLevel = $Config{DEBUG_LEVEL} || 0;
+    $log_fname = $Config{DEBUG_LOG} || $main::logFile;
+
+    logger("**** START OF LISTENER\n");
+
+    logger("Config file parsed:\n" . Dumper(\%Config), 4);
+
+    # get script filename
+    my $script = File::Basename::basename($0);
+    $SELF = catfile $FindBin::Bin, $script;
+
+    my $port = $Config{PORT} || 3169;
+    my $address = $Config{ADDRESS} || "::";
+
+    my $ip = new NetAddr::IP ($address) || log_error "Cannot parse address string";
+    my $ipversion = $ip->version();
+
+    my $server;
+    if ( $ipversion == 6 ) {
+        socket($server, AF_INET6, SOCK_STREAM, getprotobyname('tcp')) or log_error "socket: $!";
+        setsockopt($server, SOL_SOCKET, SO_REUSEADDR, 1) or logger("Warning: setsockopt: $!", 1);
+        if (not bind($server, sockaddr_in6($port, inet_pton(PF_INET6, $address)))) {
+            log_error (
+                $port < 1024
+                ? " bind: $! (ports below 1024 are not allowed)\n"
+                : "bind: $!\n"
+            );
+        }
+    } elsif ( $ipversion == 4 ) {
+        socket($server, AF_INET, SOCK_STREAM, getprotobyname('tcp')) or log_error "socket: $!";
+        setsockopt($server, SOL_SOCKET, SO_REUSEADDR, 1) or logger("Warning: setsockopt: $!", 1);
+        if (not bind($server, sockaddr_in($port, inet_pton(PF_INET, $address)))) {
+            log_error (
+                $port < 1024
+                ? " bind: $! (ports below 1024 are not allowed)\n"
+                : "bind: $!\n"
+            );
+        }
+    }
+
+    listen($server, SOMAXCONN ) or log_error " listen: $!";
+
+    syslog('info', "CIM Listener daemon started listening on $address:$port");
+
+    #my %sslOpt;
+    #$sslOpt{'SSL_version'}	= "SSLv23:!SSLv2:!SSLv3";
+    # NO EFFECT: 
+    #	    IO::Socket::SSL::set_ctx_defaults(%sslOpt);
+    # KILLS THE LISTENER: 
+    #	    IO::Socket::SSL::set_server_default(%sslOpt);
+
+    while (!$Stop) {
+        logger("Waiting for next connection...", 2);
+        if (my $client_addr = accept(my $client, $server)) {
+            async(\&handle_connection, $client, $client_addr)->detach;
+        } else {
+            log_error "No client data available";
+        }
+	logger("After one connection - exit-condition is $Stop ...", 2);
+    }
+
+    syslog('info', 'Closing listener');
+    logger("**** END OF LISTENER\n");
+    close $server;
+}
+
+sub read_pid {
+    my $pid = 0;
+    if (open FILE, '<'.$main::pidFile) {
+        $pid = <FILE>;
+        chomp $pid;
+        close FILE;
+    }
+    return $pid;
+}
+
+sub write_pid {
+    open FILE, '>'.$main::pidFile;
+    print FILE "$$\n";
+    close FILE;
+}
+
+sub find_process{
+    my $pid = shift;
+    my $running = 0;
+    if ($pid) {
+        my @lines = qx|ps $pid 2>/dev/null|;
+	foreach(@lines){
+            my $regexp = '^ *'.$pid.'.+'. $main::scriptBasename;
+            if (/$regexp/) {
+                $running = $pid;
+                last;
+            }
+        }
+   }
+    return $running;
+}
+
+sub cleanup {
+    my $kill = shift;
+    my $running = 0;
+    my $pid = read_pid();
+    if ($pid and find_process($pid)) {
+        if ($kill) {
+            kill 15, $pid;
+        } else {
+            $running = $pid;
+        }
+    }
+    if ($running == 0 and -e $main::pidFile) {
+        unlink($main::pidFile);
+    }
+    return $running;
+}
+
+sub start {
+    # Attempts to start the daemons.
+    # The return value is defined by the LSB:
+    # 0  Success
+    # 4  Insufficient privileges
+    my $pid = cleanup();
+    return RUNNING if ($pid > 0);
+    daemonize() if ($NoDetach == 0);
+    run();
+}
+
+sub stop {
+    cleanup(1);
+    syslog('info', 'Stopping CIM Listener daemon...');
+    0;
+}
+
+sub status {
+    # Returns the status.
+    # The return value is defined by the LSB:
+    # 0  Running
+    # 3  Not running
+    if (cleanup() == 0) {
+        return NOT_RUNNING;
+    } else {
+        return RUNNING;
+    }
+}
+
+# Function to Parse the Environment Variables
+# Fills %Config global variable with actual values
+# If config file is empty or non-exist, default values will be used
+sub parse_config_file {
+    my ($config_line, $Name, $Value, $Config);
+    my ($File, $config) = @_;
+
+    if (open (my $confhandle, "$File")) {
+        while (<$confhandle>) {
+            $config_line=$_;
+            chop ($config_line);          # Remove trailling \n
+            $config_line =~ s/^\s*//;     # Remove spaces at the start of the line
+            $config_line =~ s/\s*$//;     # Remove spaces at the end of the line
+            if ( ($config_line !~ /^\#/) && ($config_line ne "") ){  # Ignore lines starting with # and blank lines
+                ($Name, $Value) = split (/\s*=\s*/, $config_line, 2);          # Split each line into name value pairs
+                $config->{$Name} = $Value;                             # Create a hash of the name value pairs
+            }
+        }
+        close($confhandle);
+    } else {
+        log_error "Config file not found: $File";
+    }
+}
+
+sub script_uptime {
+    my ($days, $hours, $minutes, $seconds, $ms);
+    my $now = gettimeofday();
+    my $diff = $now - $StartTime;
+
+    logger("script_uptime start time: " . $StartTime, 6);
+    logger("script_uptime now: " . $now, 6);
+    logger("script_uptime difference: " . $diff, 6);
+
+    $ms      = ($diff - int($diff)) * 100;
+    $diff    = int($diff);
+    $seconds =  $diff % 60;
+    $diff    = ($diff - $seconds) / 60;
+    $minutes =  $diff % 60;
+    $diff    = ($diff - $minutes) / 60;
+    $hours   =  $diff % 24;
+    $days    =  ($diff - $hours) / 24;
+
+    my $result = sprintf("%d:%02d:%02d:%02d.%02d", $days, $hours, $minutes, $seconds, $ms);
+    return $result;
+}
+
+# use this config file by default
+#our $default_config = $main::config;
+our $optAction = "";
+our $conffile = undef;
+
+sub find_option {
+    my($opt, $has_arg) = @_;
+    my $idx = 0;
+
+    for my $argv (@ARGV) {
+        if($argv eq $opt) {
+            if( $has_arg ) {
+                my @args = splice @ARGV, $idx, 2;
+                return $args[1];
+            } else {
+                return splice @ARGV, $idx, 1;
+            }
+        }
+        $idx++;
+    }
+
+    return undef;
+}
+
+sub parse_cmd_args {
+
+    ## If no arguments were given, then allow STDIN to be used only
+    ### if it's not connected to a terminal (otherwise print usage)
+    pod2usage("$0: Missing argument.") if ((@ARGV == 0) && (-t STDIN));
+
+    pod2usage(
+		-verbose => 2,
+		-exitval => 0,
+    ) if (find_option("-h"));
+
+    pod2usage(
+		-msg		=> "\n$0" . ' - version: ' . $version . "\n",
+		-verbose	=> 0,
+		-exitval	=> 0,
+    ) if (find_option("-V"));
+
+    if( find_option("-D") ) {
+        $NoDetach = 1;
+    }
+
+    if(my $_conffile = find_option('-c', 1)) {
+        $conffile = $_conffile;
+    }
+    else {
+        $conffile ||= $main::config;
+    }
+
+    for (qw(start stop restart status)) {
+        if( find_option( $_ ) ) {
+            $optAction = $_;
+            last;
+        }
+    }
+}
+
+sub processActions {
+    if ($optAction eq 'start') {
+        parse_config_file ($conffile, \%Config);
+        exit start();
+    } elsif ($optAction eq 'status') {
+        exit status();
+    } elsif ($optAction eq 'stop') {
+        exit stop();
+    } elsif ($optAction eq 'restart') {
+        stop();
+        parse_config_file ($conffile, \%Config);
+        exit start();
+    }
+} #processActions
+
+#### MAIN
+
+openlog($main::scriptBasename, 'cons,pid', 'daemon') || die "Cannot open syslog";
+parse_cmd_args();
+processActions();
+
+1;
+
+__END__
+
+=head1 NAME
+
+svcimlistenerd - Starts a daemon to listen for incoming ServerView CIM indications
+
+=head1 SYNOPSIS
+
+    # Start application
+    $ svcimlistenerd [-c /path/to/configfile] start
+    $
+
+    # Stop application
+    $ svcimlistenerd stop
+
+    # Check if the daemon is running
+    $ svcimlistenerd status
+
+    # read HELP
+    $ svcimlistenerd -h
+
+=head1 DESCRIPTION
+
+svcimlistenerd runs as a daemon and acts as a simple HTTP/HTTPS listener to receive
+ServerView CIM-XML/WSMAN indications. The indications will be migrated to traps which can be
+administered by snmptt.
+
+=over 4
+
+=back
+
+=head2 Actions
+
+=over 4
+
+=item start
+
+will start up the daemon
+
+=item stop
+
+will find the daemon PID in the pidfile and send it a SIGTERM signal
+
+=item status
+
+will check the current status of the daemon
+
+=back
+
+=head2 Command Line Options
+
+=over 4
+
+=item -c config file
+
+Config file stores the port number to listen and the directory where to save
+XML-formatted events.
+
+=item -D
+
+Debug mode. Running without daemonizing (no detaching from terminal).
+
+=back
+
+
+

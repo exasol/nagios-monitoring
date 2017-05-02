@@ -1,0 +1,428 @@
+CHANGELOG Fujitsu Nagios Plugins 
+================================
+
+V3.30.01 (2016-06 - 2016-08)	
+	- reported ERRORS or CHANGE REQUEST for CIM
+	    could not be closed in the Perl exit.
+	  - 233605304 - unify '-' prints similar to SNMP script
+	  - support of CIM_MemoryCapacity 2.41.0 Types
+	- internal bugfixes
+	
+V3.30.00 (2015-08 - 2016-05)
+	- common FEATURES
+	  - There is a new ahorter ServerView System Monitor URL available since V7.20
+	    all scripts checking this URL are enhanced.
+
+	- NEW FEATURE REST SUPPORT
+	  - The scripts uses curl for any REST calls.
+	  - new plugin check_fujitsu_server_REST.pl
+		- Monitor server where ServerView Agent V7.10 or higher is installed
+		  (component Server Control has a RESTful interface)
+		  - fast as SNMP but using Authentication.
+		  - faster than CIM
+		  - There are more a little bit more information available 
+		    compared with SNMP
+		- Monitor via iRMC Report.xml Generation (Firmware 8.2 or higher)
+	  - new update manager tool updmanag_fujitsu_server_REST.pl for
+		- ServerView Agent V7.10 or higher and component Server Control (REST)
+	  - new connection and type test tool tool_fujitsu_server_REST.pl
+	  - new configuration for the monitoring amd update management
+	  - enhanced discovery tool for REST
+
+	- FEATURES SNMP
+	  - For check_fujitsu_server.pl
+	    - Handle multiple cabinet units with own fans and temperature sensors 
+	      and PSUs
+	    - prevent signs '(' and ')' in temperature sensor performance names 
+	      for Eternus cabinets 
+	    - print always parent MMB address in system notify data (if available)
+	
+	- reported CHANGE REQUEST for SNMP
+	  - For check_fujitsu_server.pl
+	    - 233598888: ommit useless RAID verbose prints for out-of-band iRMC monitoring
+	      reason: iRMC S4 does not support RAID.mib monitoring
+
+===============================
+V3.20.01 (2015-08 - 2015-11)
+	- reported ERRORS or CHANGE REQUEST for SNMP	
+	  - check_fujitsu_server.pl
+	    - 233575462: Print of driver monitoring component status for --chkupdate
+	      reason: There was a mechanism to print any non power, environment and systemboard
+	      components if these show some warning or critical status
+	      solution: This will only be done if --chksystem was selected and 
+	      if this is not drvmonitor or storage
+	    - 233576611 - iRMC and call requires too much time
+	      background: verbose prints show Primergy Remote Manager Login instead
+	      of the results of a ServerView System Monitor URL check.
+	      PROBLEM Since V3.10 !
+	      solution: the URL check will be ommited if the type "iRMC" can be discovered
+	- reported ERRORS or CHANGE REQUEST for CIM	
+	  - check_fujitsu_server_CIM.pl
+	    - Update Check: Prevent double print of sign '-' in the summary line
+	    - 233574241: missing component discovery for BX and CX systems
+	      Change for newer SvAgents: The slot id is now part of internal 
+	      component ids
+
+V3.20.00 (2015-03 - 2015-08)
+	- FEATURES CIM
+	  - UPDATE MANAGEMENT - new script and config for updmanag_fujitsu_server_CIM.pl
+	    (this uses script fujitsu_server_wsman.pl for WS-MAN access)
+	    - get several status values: host, update check, update job
+	    - fetch and set configuration settings
+	    - call update check and read check logfile
+	    - get update difference list or complete update component list
+	    - get release notes
+	    - start update job and get XML-logfile
+
+	- FEATURES SNMP
+	  - For check_fujitsu_server.pl
+	    - check information of OS.mib avalable in newer SVAgents and iRMC S4
+	      - Get operating system version and get DNS name if available
+	      - Get overall CPU load in percent if available
+	    - New support for RackCDU 
+	      - get overall status and sensor performance values
+	  - For tool_fujitsu_server.pl
+	    - check information of OS.mib avalable in newer SVAgents and iRMC S4
+	      - Get operating system version and get DNS name if available
+	      - For iRMC get Agent connection type
+	    - Handle \0 in Blade MMB RFC1213 name
+	    - New support for RackCDU 
+	  - New inventory_fujitsu_server.pl
+	    - inventory information for Server with SVAgent installed, PRIMERGY Blade MMB,
+	      PRIMEQUEST MMB, iRMC S4
+
+	- FEATURES FOR SNMP AND CIM
+	    - New support for RackCDU 
+
+	- FEATURES CONFIGURATION
+	  - Inventory Nagios service - new configuration file. This has suffix cfg_ - reason:
+	    Only extended system inventory is fetched - this is an optional feature. 
+	  - RackCDU - new configuration file. This has suffix cfg_ because this system object
+	    will be rarely monitored.
+
+	- FEATURES SNMPTT CONFIGURATION
+	  - RackCDU configuration files
+	  - Update of former configuration files ( known to ServerView Suite V7.10 )
+											
+	- reported ERRORS or CHANGE REQUEST for CIM					
+	  - check_fujitsu_server_CIM.pl
+	    - 233569661 - Update Status "OK" is printed as "UNKNOWN"
+
+	- reported ERROR for SNMP
+	  - For check_fujitsu_server.pl
+	    - 233568180 - update install list returned wrong return code
+	    - 233567286 - remove differences of SNMP error behaviour for performance calls
+	  - For all SNMP scripts
+	    - SNMPv3: No SNMPv2c trial after SNMPv3 ... the error message was 
+	      overwritten otherwise
+	    - SNMPv3: corrupt agent did sent "noSuchObject" instead of data. The scripts
+	      will catch this error behaviour.
+
+===============================
+V3.10.02 (2015-06)
+	- reported ERROR / CHANGE REQUEST
+	  - changed calling method for SSM
+
+V3.10.01 (2015-03 - 2015-05)
+	- Manual release
+	- reported ERROR for CIM
+	  - For check_fujitsu_server_CIM.pl
+	    - error message "Use of uninitialized value $model in pattern 
+	      match (m//) at ./check_fujitsu_server_CIM.pl line 4261."
+	  - For tool_fujitsu_server_CIM.pl
+	    - error message "Use of uninitialized value $name in string ne at 
+	      ./tool_fujitsu_server_CIM.pl line 1060."
+
+	- reported ERROR for SNMP
+	  - For check_fujitsu_server.pl
+	    - 233561995 - no network performance values for XEN server
+	      Error since V1.0
+	  - For discover_fujitsu_server.pl script
+	    - bugfix to discover PRIMERGY Blade MMBs 
+	      (side effect of enhancements of V3.10.00)
+	  - For tool_fujitsu_server.pl
+	    - PRIMERGY Blade MMB: prevent redundant inventory print
+	       (side effect of enhancements of V3.10.00)
+
+V3.10.00 (2014-09 - 2015-02)
+	- COMMON FEATURES
+	  - release CHANGELOG file with tgz
+	  - change @_ handling for Perl 5.18 due to customer hint
+
+	- FEATURES FOR SNMP AND CIM
+	  - For discover_fujitsu_server.pl script
+	    - Use of SVOM CSV or XML server list files as host collection
+	    - Enable control how to use SNMP community "public"
+	    - Use SystemMonitor URL as Nagios notes_url if available
+	    - Use special hostgroups for SNMP-iRMC
+	    - The discovery now fills the last part of an Iv4 address with zeros 
+	      for better sorting of Nagios host names and the output files.
+	    - Enable new option --nozeroip to prevent this change.
+	    - Enable new option --sortbyname to generate Nagios host names with
+	      systemname before IP. Default is IP before systemname.
+
+	- FEATURES SNMP
+	  - For SNMP plugin script check_fujitsu_server.pl
+	    - PRIMERGY Blade MMB: try for one hour to get last Power-Consumption values
+	      (this was necessary for one firmware error)
+	    - PRIMERGY Blade MMB: read firmware version for --agent call
+	    - Detect SystemMonitor URL
+	    - Support Liquid Cooling Device type parralel to Fans
+	      (ServerView Agents V7.10 or higher)
+	    - Update Management: Get list of components to be updated
+	    - Update Management: Get list of installed components which can be updated
+	  - For test connectivity tool tool_fujistu_server.pl
+	    - print Agent resp. firmware version in summary if -e (extended)
+	      option is set (if this information is available)
+	    - PRIMERGY Blade MMB: print Model information in summary part
+	    - PRIMERGY Blade MMB: read firmware version for -e call
+	    - Detect SystemMonitor URL
+	  
+	- FEATURES CIM
+	  - For plugin script check_fujitsu_server_CIM.pl
+	    - Detect SystemMonitor URL
+	    - iRMC: Use summary status values from corresponding Health Class for FW 7.69F or higher
+	    - iRMC: get OS information
+	    - iRMC: get Update Status
+	    - Update Management: Get list of components to be updated
+	    - Update Management: Get list of installed components which can be updated
+	  - For test connectivity tool tool_fujistu_server_CIM.pl
+	    - Detect SystemMonitor URL
+	    - iRMC: get OS information
+	    - iRMC: get Update Status
+	- Reported ERRORs for CIM
+	  - For plugin script check_fujitsu_server_CIM.pl
+	    - Detect and evaluate iRMC authentication failure response (iRMC FW 7.6x or higher)
+
+	- FEATURES CONFIGURATION
+	  - New: There are now special hostgroups for SNMP-iRMC access ommitting performance 
+	    services for file system usage and network interface values
+	  - The config samples for SNMP are separated from the CIM samples in the archive
+	    ATTENTION: Don't merge into former configuration samples
+	  - New: one hostgroup for all fujitsu monitored server
+
+	- FEATURES SNMPTT CONFIGURATION
+	  - Support Trap changes around SC2 and "Fan" Traps replaces by "Cooling Device" Traps
+	    for the enhancement for Liquid Pumps
+
+===============================
+V3.00.02 (2015-01-28)
+	- Reported ERRORs
+	  - Perlv5.16 or higher prints error hints about @_
+	  - 233550396 - error missing '-' in generated host name for Nagios
+	      restore sign '-' of the systemname for the Nagios 'hostname' generation
+
+V3.00.01 (2014-08 - 2014-09)
+	- Manual release
+	- Reported ERRORs for check_fujitsu_server.pl
+	  - 233533507 error if --snmp option and community was set
+	    (problem since V2.10)
+
+	- Reported ERRORs for check_fujitsu_server_CIM.pl
+	  - 233534759 - fail of identify check for a RH6.5 64bit.
+	    reason: missing standard classes in /root/cimv2
+	    solution: circumvention by scanning SVS operating system information if this
+	    is available.
+	    (problem since V2.10)
+
+	- Reported ERRORs or CHANGEREQUESTS for tool_fujitsu_server.pl
+	  - 233533507 - error for the combination of community and snmp version option
+	    (problem since V2.10)
+	  - rare: handle uninitialized RFC1213 description field
+
+V3.00.00 (2014-03 - 2014-05)
+	- FEATURES FOR SNMP AND CIM
+	  - New discover_fujitsu_server.pl script
+	    This script calls the other scripts for connection and type detections
+	    and is able to write Nagios host definition configuration files
+
+	- FEATURES SNMP
+	  - For SNMP plugin script check_fujitsu_server.pl
+	    Option to specify SNMP protocol version (1 for snmpv1, 2 for snmpv2c,
+	    snmpv3 is automatic set if "username" is specified)
+	  - iRMC SNMP access: 
+	    - Enable new option -A|--admin for the check script
+	      to specify the iRMC address which should be used for communication 
+	      instead of the host address
+	    - Enhance monitoring and tool script
+
+	- FEATURES CIM
+	  - Fans: Print nominal relation value in percent
+	  - iRMC CIM access: 
+	    - Enable new option -A|--admin for the check script
+	      to specify the iRMC address which should be used for communication 
+	      instead of the host address
+	    - Enhance monitoring and tool script
+	      HINT: At the moment all summary status values must be collected by the script itself
+
+===============================
+V2.10.01 (2014-03)
+	- Manual release
+	- Reported ERRORs for check_fujitsu_server.pl
+	  - 233520112 - Changed help text for SNMP port. 
+	    Background: former option -p is deprecated. -P should be used 
+	    and must be described in help.	
+
+V2.10.00 (2013-12 - 2014-03)
+	- FEATURES CIM
+	  - New WSMAN CIM support using the perl binding of OpenWSMAN
+	    For this an additional helper script fujitsu_server_wsman.pl
+	    is created and will be called by check_fujitsu_server_CIM.pl. 
+	    With option -UW the now enhanced CIM script uses WSMAN instead of wbemcli.
+	  - Enable CIM Power Consumption support using ServerView CIM classes
+	  - Enable CIM Server Update Status support using ServerView CIM classes
+	  - Enable CIM Server MassStorage Status support using ServerView CIM classes
+		ATTENTION: Currently only status of adapters are available
+	  - Enable CIM Server DriverMonitor Status support using ServerView CIM classes
+		ATTENTION: Only status of driver adapters are available
+	  - New CIM tool to test connectivity and to get server type information
+		tool_fujitsu_server_CIM.pl
+
+	- FEATURES SNMP
+	  - For SNMP plugin script check_fujitsu_server.pl
+	    - Enable -I <inputoptionfile> for SNMP plugin script.
+	      This is recommended for the setting of SNMPv3 authentication options
+	  - For test connectivity tool tool_fujistu_server.pl
+	    - Enable -I <inputoptionfile>
+	    - Enable reduced checks with new options
+		--connectiontest | --typetest
+
+	- Detected ERRORs for check_fujitsu_server_CIM.pl
+	  - One change for the usage inside embedded perl environment
+	  - Detected and removed uninitilized problem for $osTypeString
+	
+	- Reported ERRORs for check_fujitsu_server.pl
+	  - 233510237 - Perl warning for special checks if the notify information can't
+	    be collected.
+
+===============================
+V2.00.02 (2013-10 - 2013-11)
+	- Manual release
+
+V2.00.01 (2013-09 - 2013-10)
+	- New ESXi CIM support via executable wbemcli:
+	  check_fujitsu_server_CIM.pl and corresponding sample configurations
+
+V2.00.00 (2013-09 - 2013-10)
+	- SNMP Trap support
+	  - support of easy scanable informations
+	  - support of SNMPTT configuration files
+	- check_fujitsu_server.pl
+	  - Extension to check the Update Status via the SV Update Agent V6.20 or higher
+
+	- tool_fujitsu_server.pl
+	  - Extension to check the if the Update Status via the SV Update Agent V6.20 or higher
+	    is available
+
+	- Reported CHANGEREQUESTS for tool_fujitsu_server.pl
+	  - 233481437 - Print of the BIOS version
+	    Since BIOS.mib is not always supported the tool now checks additional the 
+	    BIOS information inside SC.mib.
+
+===============================
+V1.20.01 (2013-08)
+	- Manual release
+	- Reported ERRORs or CHANGEREQUESTS for check_fujitsu_server.pl
+	  - 233495806 - Check Network Performance: Return of "UNKNOWN" if no performance
+	    values are available for the network interfaces (e.G. Hyper-V vEthernet on some systems)
+	  - 233496159 - PRIMEQUEST and usage of --systeminfo and missing SerialId
+
+V1.20.00 (2013-03 - 2013-06)
+	- check_fujitsu_server.pl
+	  - For SV-Agent support add OS and FQDN information from INVENT.mib for 
+	    notify system information
+	  - new option systeminfo to get and print only notify system information
+
+	  - unified MAC format for verbose prints
+
+	  - new option chkfsperf to check File-System performance for PRIMERGY servers
+	  - new option chknetperf to check Network-Interface performance for PRIMERGY servers
+
+	  - Support for additional fields for PRIMEQUEST 2800
+
+	  - New option to specify transport domain type.
+	    This is usable for IPv6 addresses and TCP-SNMP services
+	  
+	- tool_fujitsu_server.pl
+	  - new option for no-process-print for the MIB test check to prevent
+	    inbetween process result printings
+
+	  - New option to specify transport domain type.
+	    This is usable for IPv6 addresses and TCP-SNMP services
+
+	- Reported ERRORs or CHANGEREQUESTS for check_fujitsu_server.pl
+	  - 233483099 - MAC print corrupt (V1.00 BUG)
+	    reason: Perl Net::SNMP returned stringyfied hexvalue instead of 0xhh string.
+	    solution: convert this pseudo string to hex values again.
+	  - nnnnnnnnn - handle unexpected "undefined" Enclosure and Slot number 
+	    of SV RAID
+	  - nnnnnnnnn - handle unexpected -0 values for Memory Usage Performance checks
+
+===============================
+V1.10.03 (2013-04)
+	- Manual release
+
+V1.10.02 (2013-04)	
+	- only new readme hint about BIOS.mib and BIOS version
+
+V1.10.01 (2013-03)
+	- nagios configuration samples
+	  - add ONE nagios macro for variable community and port in 
+	    command-definitions and add one sample host template for this.
+
+	 - Other Changes for tool_fujitsu_server.pl
+		  - prevent BIOS Version=0.0
+
+	 - Reported ERRORs for tool_fujitsu_server.pl 
+		  233478316 - prevent BIOS Version=-1.-1
+
+	- Reported ERRORs for check_fujitsu_server.pl 
+	  233478657 - No list of CPU table content for verbose 2 
+	    Reason: Missing because of Perls buffered print. 
+	    This happened not all the time !
+	  233478802 - ID prints in notify information for 
+	    standalone checks like chkstorage or chkmemperf
+
+
+V1.10.00 (2012-12 - 2013-03)
+	- nagios configuration samples
+	  - add variable community and port nagios macros for 
+	    command-definitions
+
+	- tool_fujitsu_server.pl
+  	  - Special RAID printout for RAID standalone
+	  - Print AdminURL of Primequest and Blades in Summary lines
+  	  - Print now some parts of extended mode always:
+		AdminURL and sub-components and sub-blades
+ 	  - Enable SNMP port option -p|--port=<nr>.
+
+	- check_fujitsu_server.pl
+  	  - RAID Storage check can be used without existence of 
+	    SV SNMP Agent if corresponding RAID MIB (SNMP) is supported.
+	    (Option --chkstorage)
+	  - prevent PowerConsumption print if value is 4294967295 => -0
+  	  - Enable SNMP port option -p|--port=<nr>. Other SMNP plugins 
+	    have similar option.
+	  - PRIMEQUEST Cassiopeia and new unitClasses
+  	  - Blades: Write MMB notify informations in case of not-ok status of
+		  subblades checks
+
+	- Reported ERRORs or CHANGEREQUESTS for check_fujitsu_server.pl
+	  - 233474929 - 0 printout for -0 == 4294967295 value in percentage
+		(Perl Net::SNMP - SNMP nonsense)
+	  - 233475126 - wrong combined exitCode for mixed chkoptions for 
+		primergy server
+	  - 233475181 - correct string Fibre to Fiber
+	  - 233476271 - "uninitilized" Perl message if Voltage or Memory
+		Modules are not existing
+  	  - 233464997 - Rearrange printouts for verbose 1 or not-ok status (notifies)
+		and print Serial Id in this data.
+	 
+	- Reported ERRORs or CHANGEREQUESTS for tool_fujitsu_server.pl 
+  	  - 233472379 - print "AdminURL" consistent for all server types
+		and print AdminURL in Summary for PRIMERGY Blade MMB
+	  - 233472413 - print model of primequest in summary
+
+===============================
+V1.00.02	(First Release)	2012-01
+===============================

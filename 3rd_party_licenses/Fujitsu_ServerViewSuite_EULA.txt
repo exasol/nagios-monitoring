@@ -1,0 +1,324 @@
+Fujitsu Technology Solutions
+Software License Agreement for End Users 
+
+
+
+1.	Subject of this Agreement
+1.1	For the purposes of this agreement "Software" 
+shall mean the software with the object code, the ver-
+sion and the specification indicated in the software 
+product data sheet of Fujitsu Technology Solutions.
+The Software consists of machine-readable instruc-
+tions and/or printed documentation and related li-
+censed materials. 
+1.2	Please read this agreement carefully before 
+you use the Software. If you do not agree with the li-
+cense terms in this agreement, you are not permitted 
+to use the Software and must immediately return all 
+copies of the Software and all accompanying items to 
+the Licensor/Sublicensor (either Fujitsu Technology 
+Solutions or the reseller who supplied you with the 
+Software) with proof of purchase for a full refund. 
+1.3	Any use of the Software requires the proper 
+payment of the applicable license fees. By using the 
+Software you agree to be bound by the terms of this 
+agreement. 
+1.4	Fujitsu Technology Solutions reserves the right 
+to implement at any time in the future an additional 
+software license key and/or license certificates as 
+countermeasures against software piracy.  
+1.5	Software components from third-party software 
+suppliers which are part of the scope of the delivery 
+are subject to separate license agreements that are 
+included with the Software or that are transmitted by 
+Fujitsu Technology Solutions upon request. 
+2.	End User License 
+2.1	Fujitsu Technology Solutions grants you a non-
+exclusive and non-transferable license to use the 
+Software on the number of workstations for which you 
+have purchased licenses. Unless you purchase addi-
+tional licenses, you are not permitted to operate the 
+Software on more than the maximum number of li-
+censed workstations or on hardware that exceeds the 
+specified type. 
+You are permitted to make a backup copy of the 
+Software for archiving purposes, provided you prop-
+erly mark the copy or partial copy of the Software with 
+the copyright notice and any other ownership informa-
+tion. 
+2.2	You are not permitted to copy, modify or dis-
+tribute the Software. Furthermore, you are not permit-
+ted to re-compile, re-engineer, convert, revise, com-
+pile or modify the Software. You may not sub-license, 
+without selling the related hardware, assign, rent, 
+lease or transfer the Software except as expressly 
+permitted by this agreement or due to mandatory legal 
+regulations. 
+2.3	If you acquired the Software as a program up-
+grade, your license for the use of the old software 
+version ends automatically with the installation of the 
+upgrade version of the Software. If parts of the old 
+software version are not replaced by the upgrade ver-
+sion, the license for the old version continues to be 
+effective until the remnants of the old software version 
+are also replaced or deactivated or shut down in any 
+other way. 
+2.4	Unless specified otherwise in the respective 
+software data sheet of Fujitsu Technology Solutions, 
+the license for a software version or release does not 
+give you any rights to new releases (updates), new 
+versions (upgrades) or technical support services for 
+the Software. Supplemental software support con-
+tracts and maintenance services, including or exclud-
+ing new releases and new versions and additional 
+technical support services, can be purchased sepa-
+rately either from Fujitsu Technology Solutions directly 
+or from authorized software resellers. 
+3.	Downloading
+For Software supplied by Fujitsu Technology Solu-
+tions over a network or a similar distribution path, the 
+following additional conditions shall apply:  
+All products supplied for downloading by Fujitsu 
+Technology Solutions are selected, made available 
+and - if supplied by third parties - provided without 
+modification. However, you are fully responsible for 
+ensuring the most current version and usability of 
+downloadable material for your own purposes and on 
+your own system. You download Software at your 
+own risk. Fujitsu Technology Solutions will not accept 
+any liability, particularly not for transmission errors or 
+problems that arise during the downloading process 
+(line failures, connection interruptions, server failures, 
+data corruption, etc.). 
+The website of Fujitsu Technology Solutions is oper-
+ated and administered only for those countries in 
+which Fujitsu Technology Solutions has one or more 
+offices. Fujitsu Technology Solutions accepts no re-
+sponsibility that Software and/or documentation can 
+or may be downloaded from a Fujitsu Technology So-
+lutions website also in locations other than the coun-
+tries mentioned above. If you access a website of Fu-
+jitsu Technology Solutions from abroad, you are fully 
+responsible for complying with any local regulations. 
+Fujitsu Technology Solutions expressly prohibits the 
+downloading of Software and/or documentation from a 
+Fujitsu Technology Solutions website in countries 
+where such downloading is considered illegal. 
+4.	Copyright
+All rights and licenses, unless they are expressly 
+granted to you in this license terms, as well as all 
+property and usage rights related to the Software (in-
+cluding parts of the Software) remain fully with Fujitsu 
+Technology Solutions and/or its third-party licensors. 
+The license terms do not authorize you to use the 
+brands, logos or trademarks of Fujitsu Technology 
+Solutions or its third-party licensors, nor are you per-
+mitted to use any other brands which are deceptively 
+similar to the brands, logos or trademarks of Fujitsu 
+Technology Solutions. Each and any use of brands, 
+logos or trademarks with respect to the Software or 
+Fujitsu Technology Solutions requires the express 
+consent of Fujitsu Technology Solutions. 
+5.	Licensor's warranty and liability disclaimer, 
+if Software is sold and delivered by Reseller 
+If you acquire the Software directly from an authorized 
+reseller (called "Reseller"), the right to install and use 
+the Software may be subject to additional software 
+license conditions agreed upon between you as the 
+licensee and the respective reseller. 
+In all cases of an authorized software resale, the 
+software is sublicensed and made available to the li-
+censee directly by the Reseller. In such cases, Fujitsu 
+Technology Solutions is not a contractual party of the 
+software license agreement between you, as licensee 
+and the Reseller, as far as the procurement of the 
+software licenses are concerned. Legal claims in con-
+nection with the software licensing can therefore be 
+asserted only on the basis of the agreements with the 
+Reseller. Under no circumstances, however, will the 
+respective scope of the license for the licensee ex-
+ceed the scope of the license agreements as speci-
+fied in sections 1, 2, 3 and 4 of this agreement.  
+Subject to mandatory legal regulations, particularly 
+those governing liability and/or warranties, which can-
+not be excluded in connection with end user license 
+agreement regulations and with reference to the li-
+censee's claims against the Reseller, Fujitsu Tech-
+nology Solutions disclaims all warranties for the Soft-
+ware in this agreement. For the same reason, Fujitsu 
+Technology Solutions disclaims any and all liabil-
+ity/claims for any violations of third parties' rights as 
+well as any implied warranties for the software's mar-
+ketability and its suitability for a particular purpose. 
+This disclaimer of liability does not apply in cases of 
+willful or malicious behavior by Fujitsu Technology So-
+lutions.
+In this End User License Agreement, Fujitsu Technol-
+ogy Solutions grants no warranties of any kind, either 
+express or implied. 
+6.	Disclaimer of liability with respect to share-
+ware, freeware and/or open source software com-
+ponents 
+6.1	The Software may contain freeware or share-
+ware which Fujitsu Technology Solutions received 
+from a third party. Fujitsu Technology Solutions paid 
+no license fees for the use of this freeware or share-
+ware. Accordingly, the licensee is not charged any li-
+cense fees for the use of the freeware or shareware. 
+You recognize and accept that Fujitsu Technology So-
+lutions therefore grants no warranties with respect to 
+such freeware or shareware components and does 
+not assume any liability in connection with the owner-
+ship, the distribution and/or the use of the respective 
+freeware or shareware. 
+6.2	The Software may also contain open source 
+software components that were developed according 
+to the "open source model" and which are distributed 
+exclusively on the basis of the GPL (General Public 
+License: http://www.gnu.org/copyleft/gpl.html) terms 
+and conditions or other standard open source stan-
+dard license terms and conditions applicable to the 
+respective open source components at the time of 
+their dissemination. You recognize and accept that 
+the licensing of such open source software compo-
+nents is governed exclusively by the above-mentioned 
+GPL terms or by the conditions which are otherwise 
+included with the open source software components. 
+Fujitsu Technology Solutions receives neither license 
+fees nor any other compensation for the delivered 
+open source software components. As far as Fujitsu 
+Technology Solutions or a third party receives any 
+compensation in connection with open source soft-
+ware components, it is received exclusively for addi-
+tional delivery items and/or services. 
+Because of the special nature of the development and 
+distribution of open source software components, Fu-
+jitsu Technology Solutions assumes no express or 
+implied liability for such components and excludes 
+any kind of warranty for such open source software 
+components, particularly in connection with missing 
+specifications, lack of functionality, programming er-
+rors or any other malfunctions. 
+7.	General limitations of liability 
+7.1	Neither Fujitsu Technology Solutions nor its 
+suppliers are liable for any consequential or indirect 
+damages, including damages arising as a result of or 
+in connection with an operational interruption, lost 
+profits or sales, lost data, or costs of capital. Fujitsu 
+Technology Solutions and its suppliers will not be li-
+able for additional ancillary or consequential costs or 
+for any other losses, costs or expenses of any kind 
+which arise as a result of the holding, sale, use or im-
+possibility of use of the Software, independent of 
+whether such claims are asserted due to warranty 
+rights, contracts, tort or any other legal theory. 
+7.2	The liability of Fujitsu Technology Solutions for 
+direct damage caused as a result of a contract viola-
+tion and/or other action or lapse on the part of Fujitsu 
+Technology Solutions which have not been excluded 
+or cannot be completely excluded due to mandatory 
+law are limited to no more than ?250,000.00. Any and 
+all other liabilities for direct damage are excluded. 
+Damage caused by Fujitsu Technology Solutions as a 
+result of slight negligence are excluded to the extent 
+permitted by applicable legal regulations.  
+7.3	Limitations and exclusions of liability resulting 
+from this agreement do not apply to damage where 
+Fujitsu Technology Solutions carries compulsory li-
+ability according to applicable laws and where such 
+liability cannot be limited to a maximum amount (for 
+example, liability for bodily damage; product liability or 
+fraudulently incorrect information). 
+
+
+8.	Export controls 
+Due to its components as well as the nature or pur-
+pose of these components, the export of the Software 
+and/or its accompanying documents may be subject 
+to official or regulatory approval. In cases where the 
+Software is intended for export, you are obliged to get 
+all approvals and authorizations required to comply 
+with all relevant export regulations.   
+The Software may not be exported if there is reason 
+to assume that the Software will be used in connec-
+tion with nuclear, chemical or biological weapons or 
+for missile technology. Furthermore, you may not de-
+liver the Software - or have it delivered indirectly - 
+to such companies or persons who are listed in the 
+applicable U.S. export regulations (particularly the 
+Table of Denial Orders/U.S. Denied Persons Lists 
+(DPL) or in the E.U. export regulations (particularly 
+the EU Terrorist List) or in the applicable warnings is-
+sued by the German export authorities or any other 
+competent authorities in any country.  
+Under no circumstances is Fujitsu Technology Solu-
+tions obligated to deliver software, patches, updates 
+or upgrades, to provide software for download or to 
+fulfill any other contractual commitments if this would 
+be a violation of the applicable export regulations of 
+the Federal Republic of Germany, the European Un-
+ion, the United States of America or of any other 
+countries.
+If you export or re-export the Software or a copy of it, 
+this may be a violation of applicable export laws and a 
+severe violation of the terms of this agreement. 
+9.	Miscellaneous
+9.1	If any term or condition in this agreement or any 
+other contract that is subject to the terms and condi-
+tions of this agreement turns out to be invalid or unen-
+forceable (partly or in full), the validity of all other 
+terms and conditions remains unaffected, unless 
+complying with the remaining terms and conditions 
+would represent an unreasonable hardship for either 
+contract party, even with the application of applicable 
+legal regulations to close the legal gap.
+9.2	If you/ the licensee do not pay the license fees 
+due and/or if the licensee does not comply with es-
+sential terms and conditions of this license agree-
+ment, Fujitsu Technology Solutions reserves the right 
+to cancel the license. In case of such cancellation, 
+you must immediately return any and all copies of the 
+software in your possession and confirm the complete 
+return [of the software copies] or the destruction of 
+these copies in writing. 
+9.3	Neither you nor Fujitsu Technology Solutions is 
+responsible or liable for the respective party's non-
+compliance with its obligations if the reason for such 
+non-compliance is outside the party's control due to 
+force majeure. 
+9.4	Any and all modifications and/or amendments 
+to these license terms and conditions are only valid if 
+they are made in writing. 
+
+
+10.	Applicable law
+10.1	These license terms and conditions are gov-
+erned by the laws of the Federal Republic of Ger-
+many.
+10.2	In the event that provisions of clause 10.1 are 
+unenforceable, these license terms and conditions 
+shall be governed by the laws of the country in which 
+you acquire the Software, with the following excep-
+tions: 1) In Australia, the terms and conditions of this 
+license are governed by the laws of the state or sov-
+ereign territory in which the business contract is being 
+concluded; 2) in Albania, Armenia, Belarus, Bosnia-
+Herzegovina, Bulgaria, Croatia, the Czech Republic, 
+Georgia, Hungary, Kazakhstan, Kirgizia, the former 
+Yugoslavian Republic of Macedonia (FYROM), Mol-
+davia, Poland, Romania, Russia, Slovakia, Slovenia, 
+the Ukraine and the Federal Republic of Yugoslavia, 
+the terms and conditions of this license are governed 
+by the laws of the Federal Republic of Germany; 3) in 
+the United Kingdom [Great Britain], all disputes with 
+respect to these license terms and conditions are go-
+verned by English law, and English courts have ex-
+clusive jurisdiction; 4) in Canada, the terms and condi-
+tions of this license are governed by the laws of the 
+Province of Ontario; 5) in the United States of Amer-
+ica and in Puerto Rico as well as in the People's Re-
+public of China the terms and conditions of this li-
+cense are governed by the laws of the U.S. State of 
+New York. 
+	
+April 1, 2009 / TD                                                                                                                                                                        Page 3 of 3

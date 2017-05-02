@@ -1,0 +1,11 @@
+--- check_fujitsu_server.pl.orig	2017-04-21 12:58:21.456464819 +0000
++++ check_fujitsu_server.pl	2017-04-21 13:08:23.200592704 +0000
+@@ -447,7 +447,7 @@
+ 		}		
+ 	}
+ 	# SNMPv3 exception:
+-	if ($useSNMPv3 and $entries) {
++	if ($useSNMPv3 and $entries and $main::verbose >= 10) {
+ 		foreach my $snmpKey ( keys %{$entries} ) {
+ 			$entries->{$snmpKey} = undef if ($snmpKey and $entries->{$snmpKey}
+ 			and $entries->{$snmpKey} =~ m/noSuchObject/i);

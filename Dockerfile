@@ -5,7 +5,7 @@ MAINTAINER EXASOL AG
 ADD apt-proxy /etc/apt/apt.conf.d
 RUN bash -c 'echo "deb http://ftp.de.debian.org/debian/ jessie-backports main" >>/etc/apt/sources.list'
 RUN apt-get -y update
-RUN apt-get install -y nagios3 lighttpd php5-cgi pnp4nagios python-pyodbc odbcinst1debian2 netcat patch wget ssmtp mutt nagios-snmp-plugins unattended-upgrades cron
+RUN apt-get install -y nagios3 lighttpd php5-cgi pnp4nagios python-pyodbc odbcinst1debian2 netcat patch wget ssmtp mutt nagios-snmp-plugins libdigest-hmac-perl unattended-upgrades cron
 
 # debug section
 RUN apt-get -y install vim less python3-dialog
@@ -60,15 +60,23 @@ ADD opt/check_hp-2.20 /opt/check_hp-2.20
 RUN ln -s /opt/check_hp-2.20/check_hp                               /usr/lib/nagios/plugins
 RUN ln -s /opt/check_hp-2.20/check_hp.cfg                           /etc/nagios3/conf.d
 
+#install check_fujitsu_server plugin
+ADD opt/fujitsu /opt/fujitsu
+RUN ln -s /opt/fujitsu/ServerViewSuite/nagios/plugin/check_fujitsu_server.pl    /usr/lib/nagios/plugins
+RUN ln -s /opt/fujitsu/ServerViewSuite/nagios/plugin/fujitsu_server.cfg         /etc/nagios3/conf.d
+
 # add further patches
 ADD opt/exasol/patches/* /opt/exasol/patches/
 RUN bash -c 'patch -p1 /usr/share/nagios3/htdocs/side.php < /opt/exasol/patches/nagios-downloadbutton.patch'
 RUN bash -c 'patch -l -p1 /etc/nagios3/stylesheets/common.css < /opt/exasol/patches/nagios-exasol-background.patch'
 RUN ln -s /opt/exasol/patches/exasol_bg.png /usr/share/nagios3/htdocs/images/exasol_bg.png
+RUN bash -c 'patch -p1 /opt/check_hp-2.20/check_hp < /opt/exasol/patches/check_hp_snmpv3_aes.patch'
+RUN bash -c 'patch -p1 /opt/fujitsu/ServerViewSuite/nagios/plugin/check_fujitsu_server.pl < /opt/exasol/patches/check_fujitsu_server_snmpv3_verboselevelfix.patch'
 
 #licenses
 ADD 3rd_party_licenses/check_openmanage-3.7.12-GPLv3.txt /opt/check_openmanage-3.7.12/LICENSE
 ADD 3rd_party_licenses/check_hp-2.20-GPL.txt /opt/check_hp-2.20/LICENSE
+ADD 3rd_party_licenses/Fujitsu_ServerViewSuite_EULA.txt /opt/fujitsu/ServerViewSuite/LICENSE
 
 # clean up and create entrypoint
 RUN apt-get -yq clean

@@ -1,0 +1,65 @@
+###############################################################################
+# File:		any definitions around SNMP calls for RackCDU
+# Format:	NagiosCore
+#
+# Author:	Fujitsu Technology Solutions
+# Version:      3.30.02
+# LastChange:	3.20.00
+# Date:		2015-07-03
+#
+# These configuration files are samples for a Nagios-Core integration.
+# Please copy or integrate these files into your Nagios-Core system.
+#
+# Hint about $_HOSTSV_OPTIONS$
+#       The plugin can work without these options ! (Default -Cpublic -p161).
+#       Use _SV_OPTIONS in host definition to set 
+#	- SNMP2 community or 
+#	- SNMP3 options or
+#       - non-standard SNMP port or 
+#	- usage of option input file (option -I) or
+#       - administration address (iRMC) (option -A)
+#       You are free to rename these MACROS or add MACROS.
+#
+# THESE definitions use ServerView commands definitions
+###############################################################################	
+
+define hostgroup {
+	hostgroup_name            	rackcdu_systems
+	alias                     	Fujitsu Asetek RackCDU
+	register                  	1
+}
+
+####
+
+define service {
+	hostgroup_name			rackcdu_systems	
+	service_description       	SV SNMP Uptime
+	servicegroups             	serverview
+	use                       	generic-service
+	check_command             	check_fujitsu_server!--chkuptime
+	flap_detection_enabled    	1
+	register                  	1
+}
+
+define service {
+	hostgroup_name			rackcdu_systems	
+	service_description       	SV System
+	servicegroups             	serverview
+	use                       	generic-service,perfdata-service
+	check_command             	check_fujitsu_server!--rack
+	flap_detection_enabled    	1
+	register                  	1
+}
+
+define servicedependency {
+	dependent_service_description 	SV System
+	hostgroup_name 			rackcdu_systems
+	service_description 		SV SNMP Uptime
+	execution_failure_criteria 	w,u,c
+	notification_failure_criteria 	w,u,c
+	inherits_parent			1
+}
+
+###############################################################################
+# END OF FILE
+###############################################################################

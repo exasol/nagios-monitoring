@@ -1,0 +1,45 @@
+###############################################################################
+# File:		service definition 
+# Format:	NagiosCore
+#
+# Author:	Fujitsu Technology Solutions
+# Version:      3.30.02
+# LastChange:	1.20.00
+# Date:		2013-04-04
+#
+# These configuration files are samples for a Nagios-Core integration.
+# Please copy or integrate these files into your Nagios-Core system.
+#
+# Expects: predefined generic-service and perfdata-service
+#
+# ATTENTION:
+#	This is a configuration sample ! In this file the host or hostgroups
+#	assignments are missing or commented. Please enter host or hostgroups
+#	which should use these services
+#
+###############################################################################
+
+#### the following two are part of PRIMERGY server --chksystem call
+define service {
+	# ?
+	service_description       	SV Hardware
+	servicegroups             	serverview
+	use                       	generic-service
+	check_command             	check_fujitsu_server!--chkhardware
+	flap_detection_enabled    	0
+	register                  	1
+}
+
+define service {
+	# ?
+	service_description       	SV MassStorage
+	servicegroups             	serverview
+	use                       	generic-service
+	check_command             	check_fujitsu_server!--chkstorage
+	flap_detection_enabled    	0
+	register                  	1
+}
+
+###############################################################################
+# END OF FILE
+###############################################################################

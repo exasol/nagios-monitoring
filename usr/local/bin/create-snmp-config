@@ -1,0 +1,137 @@
+#!/usr/bin/env python
+import xmlrpclib, sys, re, os.path, ssl
+from urllib     import quote_plus
+from getpass    import getpass
+from random     import SystemRandom
+from string     import ascii_letters, digits
+
+allowedCharsPattern =   re.compile(r'^[A-Za-z0-9_\-,.]{8,}$')
+ip4Pattern =       re.compile(r'^(\d+\.\d+\.\d+)\.(\d+)$')
+loginNamePattern =      re.compile(r'^[A-Za-z0-9_]+$')
+
+def randomString(length):
+    out = ''
+    choice = ascii_letters + digits
+    while (len(out) < length):
+        out += SystemRandom().choice(choice)
+    return out
+
+def validatedInput(pattern, text):
+    value = raw_input(text).strip()
+    if pattern.match(value):
+        return value
+    else:
+        return validatedInput(pattern, text)
+
+def ServerProxy(url):
+    if hasattr(ssl, 'SSLContext'):
+        sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+        sslcontext.verify_mode = ssl.CERT_NONE
+        sslcontext.check_hostname = False
+        return xmlrpclib.ServerProxy(url, context=sslcontext)
+    return xmlrpclib.ServerProxy(url)
+
+def getMonitoringPlugin(s, pluginPattern):
+    pluginVersion = ''
+    latestPlugin = ''
+    for plugin in s.showPluginList():
+        match = pluginPattern.match(plugin)
+        if match and pluginVersion < match.group(1):
+            pluginVersion = match.group(1)
+            latestPlugin = plugin
+    return latestPlugin
+
+licenseServerHostname = validatedInput(ip4Pattern, 'License Server IP address: ')
+userName = validatedInput(loginNamePattern, 'EXAoperation admin login: ')
+password = getpass('EXAoperation password: ')
+snmplogin = validatedInput(loginNamePattern, 'SNMPv3 login: ')
+snmpauthpass = getpass('SNMPv3 authentication password (SHA only): ')
+snmpprivpass = getpass('SNMPv3 privacy password (AES only): ')
+localhostCommunity = randomString(24)
+print('--\n')
+
+snmpConfigurationString = """#generated snmpd.conf
+agentAddress                    udp:161,udp6:[::1]:161
+view                            viewall included .iso
+rwcommunity                     {community} localhost -V viewall
+rouser                          {login} priv -V viewall
+createUser                      {login} SHA "{authpass}" AES "{privpass}"
+""".format(**{
+    'login'     : snmplogin,
+    'authpass'  : snmpauthpass,
+    'privpass'  : snmpprivpass,
+    'community' : localhostCommunity
+})
+
+dellPluginPattern = re.compile('Administration\.DELL-OpenManage-(.*)')
+hpPluginPattern =   re.compile('Administration\.HP-SPP-(.*)')
+fujitsuPluginPattern = re.compile('Administration\.FSC-(.*)')
+fujitsuDmiPattern = re.compile('FUJITSU.*?PRIMERGY', re.I)   
+dellDmiPattern =    re.compile('Dell Inc\..*?PowerEdge', re.I)
+hpDmiPattern =      re.compile('HP.*?ProLiant', re.I)
+dellSnmpCfg =       'smuxpeer                        .1.3.6.1.4.1.674.10892.1\n'
+hpSnmpCfg =         'dlmod                           cmaX /usr/lib64/libcmaX64.so\n'
+fujitsuSnmpCfg =    'master                          agentx\n'
+
+s = ServerProxy("https://%s:%s@%s/cluster1" % (
+    quote_plus(userName),
+    quote_plus(password),  
+    licenseServerHostname
+))
+
+def handleDeployment(pluginName, nodeName, additionalCfg):
+    status = s.callPlugin(pluginName, nodeName, 'STATUS')
+    if ('not installed' in status[1] and not 'ServerView Agents' in status[1]) or 'Tools do not seem to be installed' in status[1]:
+        print('\tInstalling monitoring plugin')
+        ret, output = s.callPlugin(pluginName, nodeName, 'INSTALL_AND_START')
+        if ret != 0:
+            print('\t*** Could not install plugin')
+
+        for line in output.split('\n'):
+            line = str.strip(line)
+            if line != '':
+                print('\t' + line)
+
+    status = s.callPlugin(pluginName, nodeName, 'STATUS')
+    if 'started' in status[1] or 'is running' in status[1] or 'ServerView unixagt: running' in status[1]:
+        print('\tDeploying new configuration')
+        ret, output = s.callPlugin(pluginName, nodeName, 'PUT_SNMP_CONFIG', snmpConfigurationString + additionalCfg)
+        if ret != 0:
+            print('\t*** Could not deploy configuration')
+        print('\tRestarting services')
+        #ret, output = s.callPlugin(pluginName, nodeName, 'RESTART')
+        ret = 0;
+        if ret != 0:
+            print('\t*** Restart failed:')
+            print(output)
+        print('All done.\n\n')
+
+for nodeName in ['n0010'] + s.getNodeList():
+    hwInfoString = s.getHardwareInformation(nodeName, 1).replace('\n', ' ')
+    if hpDmiPattern.search(hwInfoString): # HP ProLiant
+        print("%s:\tHP ProLiant detected" % nodeName)
+        pluginName = getMonitoringPlugin(s, hpPluginPattern)
+        if pluginName:
+            handleDeployment(pluginName, nodeName, hpSnmpCfg)
+        else:
+            print("\tNo plugin available - please upload first")
+
+    elif dellDmiPattern.search(hwInfoString) or 'Dell System' in s.getHardwareInformation(nodeName, 11).replace('\n', ' '): # DELL PowerEdge
+        print("%s:\tDELL PowerEdge detected" % nodeName)
+        pluginName = getMonitoringPlugin(s, dellPluginPattern)
+        if pluginName:
+            handleDeployment(pluginName, nodeName, dellSnmpCfg)
+        else:
+            print("\tNo plugin available - please upload first")
+
+    elif fujitsuDmiPattern.search(hwInfoString): # Fujitsu Primergy
+        print("%s:\tFujitsu Primergy detected" % nodeName)
+        pluginName = getMonitoringPlugin(s, fujitsuPluginPattern)
+        if pluginName:
+            handleDeployment(pluginName, nodeName, fujitsuSnmpCfg)
+        else:
+            print("\tNo plugin available - please upload first")
+    else:
+        print("%s:\tUnknown hardware", nodeName)
+
+sys.exit(0)
