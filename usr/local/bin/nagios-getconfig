@@ -3,9 +3,12 @@ function generate_archive()
 {
     (
         find /etc/nagios3/conf.d -type f -iname 'exa*cfg' -print0; 
-        find /opt/exasol/monitoring -type f -print0
+        find /opt/exasol/monitoring -type f -print0;
+        find /etc/nagios3/conf.d -name 'check_hp.cfg' -print0;
+        find /etc/nagios3/conf.d -name 'fujitsu_server.cfg' -print0;
+        find /etc/nagios3/conf.d -name 'dell_openmanage.cfg' -print0;
     )                               |\
-    (xargs -0 tar c) 2>/dev/null    |\
+    (xargs -0 tar hc) 2>/dev/null    |\
     gzip -9c                       
 }
 
