@@ -121,6 +121,15 @@ You can download the generated configuration files using the Nagios web interfac
 * on Windows docker hosts you need to start your command line prompt (CMD.EXE) with administrator privileges, otherwise pulling the image won't work properly
 * if you got an error like "WARNING - internal error <Fault -1: 'Volume could not be found'>" from check\_db\_diskspace plugin please check your permissions on the EXAStorage volumes and make sure that you didn't change the system labels of those volumes (create own labels if you want to tag them instead of renaming the given ones).
 
-
 ## Sources
-All sources to create the docker image can be found on GitHub: https://github.com/EXASOL/nagios-monitoring
+All sources to create the docker image can be found on GitHub (https://github.com/EXASOL/nagios-monitoring).
+If you want to build the container from scratch you can do by using the following lines:
+```
+git clone https://github.com/EXASOL/nagios-monitoring
+docker build -t exasol/nagios-monitoring:latest -f Dockerfile .
+```
+
+## Used 3rd party plugins
+* check_hp: http://www.crowdedplace.com/category/check_hp/
+* check_openmanage: http://folk.uio.no/trondham/software/check_openmanage.html
+* [Fujitsu Software ServerViewSuite Nagios-Core-Plugin](/opt/fujitsu/ServerViewSuite/nagios/README.txt)
