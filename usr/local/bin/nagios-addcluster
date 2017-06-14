@@ -315,9 +315,17 @@ for dbName in cluster.getDatabaseList():
         service_description     Free DB Space {Database}
         _database               {Database}
 }}
+
+define service{{
+    use                         exasol_db_backup
+    host_name                   {ClusterName}-license
+    name                        exasol_db_backup_{Database}
+    service_description         Backup Status {Database}
+    _database                   {Database}
+}}    
 """.format(**{
     'ClusterName'       : clusterName,
-    'Database'          : dbName,
+     'Database'          : dbName,
 })
 
 if len(snmpIps) >0:
