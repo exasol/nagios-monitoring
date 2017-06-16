@@ -59,6 +59,7 @@ clusterNodeIps = []
 configurationString = ''
 logServiceId = 0
 databaseDict = {}
+checkForBackups = []
 
 while clusterNodes == 0 and not abortWizard:
     try:
@@ -108,6 +109,8 @@ for dbName in cluster.getDatabaseList():
                 skipInstance = raw_input('Do you want to try again? (Y/n) ').lower().strip() == 'n'
                 print('\n')
 
+    if raw_input('Do you want check for valid backups for your instance "%s"? (Y/n)' % dbName).lower().strip() != 'n':
+        checkForBackups.append(dbName)
 
 snmpVersion = 0 
 snmpCommunityString = None
@@ -316,17 +319,26 @@ for dbName in cluster.getDatabaseList():
         _database               {Database}
 }}
 
-define service{{
+""".format(**{
+    'ClusterName'       : clusterName,
+    'Database'          : dbName
+})
+
+for dbName in cluster.getDatabaseList():
+    if dbName in checkForBackups:
+        configurationString += """define service{{
     use                         exasol_db_backup
     host_name                   {ClusterName}-license
     name                        exasol_db_backup_{Database}
     service_description         Backup Status {Database}
     _database                   {Database}
 }}    
+
 """.format(**{
     'ClusterName'       : clusterName,
-     'Database'          : dbName,
+    'Database'          : dbName
 })
+
 
 if len(snmpIps) >0:
     for ip in snmpIps:
