@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+import xmlrpclib, sys, re, os.path, ssl
+from getpass    import getpass
+from string     import ascii_letters, digits
+from subprocess import Popen, PIPE, STDOUT
+
+passwordPattern =       re.compile(r'([^"\']|\S)+')
+userPattern =           re.compile(r'^[A-Za-z0-9_\-]+$')
+emailPattern =          re.compile(r'^[A-Z0-9.\-_]+\@[A-Z0-9\-_]+\.[A-Z0-9.\-_]+$', re.I)
+smtpServerPattern =     re.compile(r'^[A-Z0-9.\-_]+$', re.I)
+
+def validatedInput(pattern, text, isPassword = False):
+    value = None
+    if isPassword:
+        value = getpass(text).strip()
+    else:
+        value = raw_input(text).strip()
+    if pattern.match(value):
+        return value
+    else:
+        return validatedInput(pattern, text, isPassword)
+
+rootEmailAddress = validatedInput(emailPattern, 'Monitoring email receiver: ')
+senderDomain = validatedInput(smtpServerPattern, 'Sender domain: ')
+smtpUser = validatedInput(userPattern, 'SMTP user: ')
+smtpPassword = validatedInput(passwordPattern, 'SMTP password: ', True)
+smtpServer = validatedInput(smtpServerPattern, 'SMTP server: ')
+
+configurationString = """#auto-generated ssmtp.conf
+root={RootEmailAddress}
+mailhub={SmtpServer}
+hostname={SenderDomain}
+AuthUser={SmtpUser}
+AuthPass={SmtpPassword}
+AuthMethod=LOGIN
+FromLineOverride=yes
+UseTLS=Yes
+UseSTARTTLS=Yes
+
+""".format(**{
+    "RootEmailAddress"  : rootEmailAddress,
+    "SmtpServer"        : smtpServer,
+    "SenderDomain"      : senderDomain,
+    "SmtpUser"          : smtpUser,
+    "SmtpPassword"      : smtpPassword,
+})
+
+with open('/etc/ssmtp/ssmtp.conf', 'w') as f:
+    f.write(configurationString)
+
+proc = Popen(['mail', '-v', '-s', 'EXASOL/Nagios3 monitoring container email test', rootEmailAddress], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+out, err = proc.communicate(input = "If you can read these lines it seems that the configration has been successfully finished.\n\n")
+
+if err != None:
+    sys.exit(err)
+
+# rewrite nagios configuration file
+defineContactPattern = re.compile('^\s*define\s+contact\s*{\s*$')
+contactNamePattern = re.compile('^\s*contact_name\s+(\S+)$')
+emailContactPattern = re.compile('^\s*email\s+(\S+)\s*$')
+closingBracketPattern = re.compile('^\s*}\s*$')
+defineContact = False
+isContactName = False
+contactName = 'root'
+configurationString = ''
+
+with open('/etc/nagios3/conf.d/contacts_nagios2.cfg', 'r') as f:
+    fileString = f.read()
+    for line in fileString.split('\n'):
+        match = defineContactPattern.search(line)
+        if match:
+            configurationString += line + '\n'
+            defineContact = True
+            continue
+
+        match = contactNamePattern.search(line)
+        if match and defineContact and match.group(1) == contactName:
+            isContactName = True
+            configurationString += line  + '\n'
+            continue
+
+        match = emailContactPattern.search(line)
+        print(match)
+        if match and isContactName:
+            configurationString += '        email                           ' + rootEmailAddress + '\n'
+            continue
+
+        match = closingBracketPattern.search(line)
+        if match:
+            configurationString += line + '\n'
+            defineContact = False
+            continue
+
+        configurationString += line + '\n'
+
+if not isContactName:
+    print('/etc/nagios3/conf.d/contacts_nagios2.cfg: not able to change root user entry')
+    sys.exit(1)
+
+with open('/etc/nagios3/conf.d/contacts_nagios2.cfg', 'w') as f:
+    f.write(configurationString)
+
+print(configurationString)
+proc = Popen(['/etc/init.d/nagios3', 'reload'], stdout=PIPE, stderr=STDOUT)
+proc.wait()
+
