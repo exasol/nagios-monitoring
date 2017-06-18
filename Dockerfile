@@ -4,11 +4,11 @@ MAINTAINER EXASOL AG
 # install packages
 ADD apt-proxy /etc/apt/apt.conf.d
 RUN bash -c 'echo "deb http://ftp.de.debian.org/debian/ jessie-backports main" >>/etc/apt/sources.list'
-RUN apt-get -y update
-RUN apt-get install -y nagios3 lighttpd php5-cgi pnp4nagios python-pyodbc odbcinst1debian2 netcat patch wget ssmtp mutt nagios-snmp-plugins libdigest-hmac-perl unattended-upgrades cron
+RUN apt-get -qy update
+RUN apt-get install -qy locales nagios3 lighttpd php5-cgi pnp4nagios python-pyodbc odbcinst1debian2 netcat patch wget ssmtp nagios-snmp-plugins libdigest-hmac-perl unattended-upgrades cron
 
 # debug section
-RUN apt-get -y install vim less python3-dialog
+RUN apt-get -qy install vim less python3-dialog
 
 # configure apt and unattended upgrades
 ADD etc/apt/apt.conf.d/* /etc/apt/apt.conf.d/
@@ -23,10 +23,6 @@ RUN lighttpd-enable-mod auth
 RUN lighttpd-enable-mod status
 RUN lighttpd-enable-mod nagios3
 RUN lighttpd-enable-mod fastcgi-php
-
-# configure mutt
-RUN mkdir /root/Mail
-RUN ln -s /var/mail/mail /var/mail/root
 
 # configure nagios webinterface
 RUN /bin/bash -c 'htpasswd -ic /etc/nagios3/htpasswd.users nagiosadmin <<< "admin"'
@@ -64,6 +60,13 @@ RUN ln -s /opt/check_hp-2.20/check_hp.cfg                           /etc/nagios3
 ADD opt/fujitsu /opt/fujitsu
 RUN ln -s /opt/fujitsu/ServerViewSuite/nagios/plugin/check_fujitsu_server.pl    /usr/lib/nagios/plugins
 RUN ln -s /opt/fujitsu/ServerViewSuite/nagios/plugin/fujitsu_server.cfg         /etc/nagios3/conf.d
+
+#configure ssmtp package (security)
+RUN groupadd -r ssmtp
+RUN chown :ssmtp /etc/ssmtp/ssmtp.conf
+RUN chmod 640 /etc/ssmtp/ssmtp.conf
+RUN chown :ssmtp /usr/sbin/ssmtp
+RUN chmod g+s /usr/sbin/ssmtp
 
 # add further patches
 ADD opt/exasol/patches/* /opt/exasol/patches/
