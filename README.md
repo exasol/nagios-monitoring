@@ -104,6 +104,13 @@ Password:
 After adding the cluster, all monitoring services are added to Nagios. You can check by opening the "Services" page:
 ![Nagios3 - Services](/images/pic17.png)
 
+### Using SMTP/Email to get informed about events
+You can directly get informed about Nagios3 events via email if you want. All you need for this is a SMTP server and credentials for an email sender on your SMTP server. Just start the ssmtp wizard and fill in the informations:
+```
+docker exec -ti <container name/id> configure-sstmp [-v]
+```
+If you encounter problems you can add "-v" to start the wizard in verbose mode.
+
 ### Other operations
 To mange the Nagios system, there exist a few additional methods:
 
@@ -113,6 +120,7 @@ docker exec -ti <container id> nagios-addcluster                            | ad
 docker exec -ti <container id> nagios-listcluster                           | list all clusters added by the configuration wizard
 docker exec -ti <container id> nagios-removecluster                         | remove a cluster from the monitoring system
 docker exec -ti <container id> nagios-passwd                                | changes the password for the Nagios webinterface
+docker exec -ti <container id> configure-ssmtp                              | starts ssmtp/email configuration wizard
 docker exec <container id> nagios-getconfig \|base64 -di >config.tar.gz     | (Linux only!) download the Nagios configuration and plugins
 
 You can download the generated configuration files using the Nagios web interface (see "Download Configuration" link in the navigation pane on the left side).

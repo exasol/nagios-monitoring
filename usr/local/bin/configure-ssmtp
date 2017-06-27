@@ -3,7 +3,33 @@ import xmlrpclib, sys, re, os.path, ssl
 from getpass    import getpass
 from string     import ascii_letters, digits
 from subprocess import Popen, PIPE, STDOUT
+from getopt     import getopt
+from sys        import exit, argv, version_info, stdout, stderr
 
+opts, args = None, None
+try:
+    opts, args = getopt(argv[1:],'hv')
+
+except:
+        print "Unknown parameter(s): %s" % argv[1:]
+        exit(2)
+
+verboseMode = False
+for opt in opts:
+    parameter = opt[0]
+    value = opt[1]
+
+    if parameter == '-h':
+        print """
+    Q: what is it? A: A configuration wizard to set up ssmtp mail forwarding and easy configuring Nagios3.
+    Q: How to use? A: Fill out the questions. If you don't get the test mail, try to use the verbose option (-v) to find out the reason.
+"""
+        exit(0)
+
+    if parameter == "-v":
+        print "Verbose mode activated."
+        verboseMode = True
+    
 passwordPattern =       re.compile(r'([^"\']|\S)+')
 userPattern =           re.compile(r'^[A-Za-z0-9_\-]+$')
 emailPattern =          re.compile(r'^[A-Z0-9.\-_]+\@[A-Z0-9\-_]+\.[A-Z0-9.\-_]+$', re.I)
@@ -51,6 +77,10 @@ with open('/etc/ssmtp/ssmtp.conf', 'w') as f:
 proc = Popen(['mail', '-v', '-s', 'EXASOL/Nagios3 monitoring container email test', rootEmailAddress], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 out, err = proc.communicate(input = "If you can read these lines it seems that the configration has been successfully finished.\n\n")
 
+if verboseMode:
+    stderr.write("\n%s\n" % out)
+    stderr.flush()
+
 if err != None:
     sys.exit(err)
 
@@ -80,7 +110,6 @@ with open('/etc/nagios3/conf.d/contacts_nagios2.cfg', 'r') as f:
             continue
 
         match = emailContactPattern.search(line)
-        print(match)
         if match and isContactName:
             configurationString += '        email                           ' + rootEmailAddress + '\n'
             continue
@@ -100,7 +129,6 @@ if not isContactName:
 with open('/etc/nagios3/conf.d/contacts_nagios2.cfg', 'w') as f:
     f.write(configurationString)
 
-print(configurationString)
 proc = Popen(['/etc/init.d/nagios3', 'reload'], stdout=PIPE, stderr=STDOUT)
 proc.wait()
 
