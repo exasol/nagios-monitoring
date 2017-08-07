@@ -8,7 +8,7 @@ from getopt     import getopt
 from xmlrpclib  import ServerProxy
 from uuid       import uuid4
 
-pluginVersion           = "17.01"
+pluginVersion           = "17.08"
 hostName                = None
 userName                = None
 password                = None
@@ -17,6 +17,7 @@ opts, args              = None, None
 cacheDirectory          = None
 uuidFile                = None
 uuidString              = None
+blacklistFile           = '/opt/exasol/monitoring/check_logservice.blacklist'
 
 if name == 'nt':            #OS == Windows
     from tempfile import gettempdir
@@ -25,7 +26,7 @@ elif name == 'posix':       #OS == Linux, Unix, etc.
     cacheDirectory          = r'/var/cache/nagios3'
 
 try:
-    opts, args = getopt(argv[1:], 'hVH:i:u:p:')
+    opts, args = getopt(argv[1:], 'hVH:i:u:p:b:')
 
 except:
     print "Unknown parameter(s): %s" % argv[1:]
@@ -46,6 +47,7 @@ EXAoperation XMLRPC log service monitor (version %s)
     -i <logservice id>      interger id of the used logservice
     -u <user login>         EXAoperation login user
     -p <password>           EXAoperation login password
+    -b <blacklist file>     Blacklist all unwanted logservice lines
 """ % (pluginVersion)
         exit(0)
     
@@ -65,6 +67,9 @@ EXAoperation XMLRPC log service monitor (version %s)
     elif parameter == '-i':
         logserviceId = int(value)
 
+    elif parameter == '-b':
+        blacklistFile = value.strip()
+
 if not (hostName and userName and password and logserviceId != None):
     print('Please define at least the following parameters: -H -u -p -i')
     exit(4)
@@ -77,6 +82,14 @@ def XmlRpcCall(urlPath = ''):
         sslcontext.check_hostname = False
         return ServerProxy(url, context=sslcontext)
     return ServerProxy(url)
+
+blacklistArray = []
+if isfile(blacklistFile):
+    with open(blacklistFile) as f:
+        line = f.readline().strip()
+        while (line):
+            blacklistArray.append(line)
+            line = f.readline().strip()
 
 uuidFile = '%s%scheck_logservice_%s_%s.uuid' % (cacheDirectory, sep, logserviceId, hostName) 
 if isfile(uuidFile):
@@ -95,7 +108,7 @@ logMessages = ''
 logPriority = 0
 for logEntry in logEntries[2]:
     logEntryPriority = logEntry['priority']
-    if logEntryPriority in ['Warning','Error']:
+    if logEntryPriority in ['Warning','Error'] and not any(item in logEntry['message'] for item in blacklistArray):
         logMessages += '\n%s' % logEntry['message'].replace('|', '!')
         if logEntryPriority == 'Warning': logPriority |= 1
         elif logEntryPriority == 'Error': logPriority |= 2
