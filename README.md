@@ -21,7 +21,7 @@ Log into EXAoperation web interface with a user which has Administrator or Maste
 
 ### Assign Supervisor role
 Assign the correct role to the new user by clicking "Roles". The default role for new users is "User", but not all XMLRPC functions used by the plugins can be used by this role. That's why you have to change the role to "Supervisor".
-!pic4.png|thumbnail!
+![Set up role](/images/pic4.png)
 
 ### Grant read-only access to all data and archive volumes 
 Add that user to all available EXAStorage volumes - not including any temporary volumes (which are system-managed). Having read-only access to all volumes is necessary to be able to calculate the free, available space for the databases. A full explanation about calculating the free disk space can be found in SOL-366.
