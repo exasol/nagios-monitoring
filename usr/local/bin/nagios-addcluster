@@ -297,7 +297,7 @@ for dbName in databaseDict.keys():
     configurationString += """define service{{
         use                     exasol_db_performance
         host_name               {ClusterName}-license
-        name                    exasol_db_performance_{Database}
+        name                    exasol_db_performance_{ClusterName}_{Database}
         service_description     DB Performance {Database}
         _database               {Database}
         _dbuser                 {User}
@@ -314,7 +314,7 @@ for dbName in cluster.getDatabaseList():
     configurationString += """define service{{
         use                     exasol_db_diskspace
         host_name               {ClusterName}-license
-        name                    exasol_db_diskspace_{Database}
+        name                    exasol_db_diskspace_{ClusterName}_{Database}
         service_description     Free DB Space {Database}
         _database               {Database}
 }}
@@ -329,7 +329,7 @@ for dbName in cluster.getDatabaseList():
         configurationString += """define service{{
     use                         exasol_db_backup
     host_name                   {ClusterName}-license
-    name                        exasol_db_backup_{Database}
+    name                        exasol_db_backup_{ClusterName}_{Database}
     service_description         Backup Status {Database}
     _database                   {Database}
 }}    
