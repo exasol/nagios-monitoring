@@ -9,7 +9,7 @@ from xmlrpclib  import ServerProxy
 from time       import time
 
 odbcDriver              = '/opt/exasol/EXASOL_ODBC-6.0.4/lib/linux/x86_64/libexaodbc-uo2214lv2.so'
-pluginVersion           = '17.11.1'
+pluginVersion           = '17.11.2'
 databaseName            = None
 databaseUser            = None
 databasePassword        = None
@@ -29,7 +29,7 @@ elif name == 'posix':       #OS == Linux, Unix, etc.
     cacheDirectory          = r'/var/cache/nagios3'
 
 try:
-    opts, args = getopt(argv[1:], 'hVH:d:u:p:l:a:c:')
+    opts, args = getopt(argv[1:], 'hVH:d:u:p:l:a:c:o:')
 
 except:
     print "Unknown parameter(s): %s" % argv[1:]
@@ -53,6 +53,7 @@ EXAoperation XMLRPC backup run check (version %s)
     -l <dbuser login>       DB instance login user
     -a <dbuser passwd>      DB instance login password
     -c <timeout in sec>     (optional) time until a transaction conflict creates a warning
+    -o <ODBC driver name>   (optional) ODBC driver name
 """ % (pluginVersion)
         exit(0)
     
@@ -80,6 +81,9 @@ EXAoperation XMLRPC backup run check (version %s)
 
     elif parameter == '-c':
         transactionConflictWarnDuration = int(value.strip())
+
+    elif parameter == '-o':
+        odbcDriver = value.strip()
 
 if not (hostName and 
         userName and 
