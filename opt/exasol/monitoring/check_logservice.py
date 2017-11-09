@@ -8,7 +8,7 @@ from getopt     import getopt
 from xmlrpclib  import ServerProxy
 from uuid       import uuid4
 
-pluginVersion           = "17.08"
+pluginVersion           = "17.11"
 hostName                = None
 userName                = None
 password                = None
@@ -83,45 +83,58 @@ def XmlRpcCall(urlPath = ''):
         return ServerProxy(url, context=sslcontext)
     return ServerProxy(url)
 
-blacklistArray = []
-if isfile(blacklistFile):
-    with open(blacklistFile) as f:
-        line = f.readline().strip()
-        while (line):
-            blacklistArray.append(line)
+try:
+    blacklistArray = []
+    if isfile(blacklistFile):
+        with open(blacklistFile) as f:
             line = f.readline().strip()
+            while (line):
+                blacklistArray.append(line)
+                line = f.readline().strip()
 
-uuidFile = '%s%scheck_logservice_%s_%s.uuid' % (cacheDirectory, sep, logserviceId, hostName) 
-if isfile(uuidFile):
-    with open(uuidFile) as f:
-        uuidString = f.read().strip()
-else:
-    with open(uuidFile, 'w') as f:
-        uuidString = uuid4().hex
-        f.write(uuidString)
+    uuidFile = '%s%scheck_logservice_%s_%s.uuid' % (cacheDirectory, sep, logserviceId, hostName) 
+    if isfile(uuidFile):
+        with open(uuidFile) as f:
+            uuidString = f.read().strip()
+    else:
+        with open(uuidFile, 'w') as f:
+            uuidString = uuid4().hex
+            f.write(uuidString)
 
-cluster = XmlRpcCall('/')
-logservice = XmlRpcCall('/logservice%i' % logserviceId)
-logserviceUserId = 'check_logservice_%s_%s_%s_%i' % (uuidString, hostName, userName, logserviceId)
-logEntries = logservice.logEntriesTagged(logserviceUserId)
-logMessages = ''
-logPriority = 0
-for logEntry in logEntries[2]:
-    logEntryPriority = logEntry['priority']
-    if logEntryPriority in ['Warning','Error'] and not any(item in logEntry['message'] for item in blacklistArray):
-        logMessages += '\n%s' % logEntry['message'].replace('|', '!')
-        if logEntryPriority == 'Warning': logPriority |= 1
-        elif logEntryPriority == 'Error': logPriority |= 2
+    cluster = XmlRpcCall('/')
+    logservice = XmlRpcCall('/logservice%i' % logserviceId)
+    logserviceUserId = 'check_logservice_%s_%s_%s_%i' % (uuidString, hostName, userName, logserviceId)
+    logEntries = logservice.logEntriesTagged(logserviceUserId)
+    logMessages = ''
+    logPriority = 0
+    for logEntry in logEntries[2]:
+        logEntryPriority = logEntry['priority']
+        if logEntryPriority in ['Warning','Error'] and not any(item in logEntry['message'] for item in blacklistArray):
+            logMessages += '\n%s' % logEntry['message'].replace('|', '!')
+            if logEntryPriority == 'Warning': logPriority |= 1
+            elif logEntryPriority == 'Error': logPriority |= 2
 
-if logPriority > 0:
-    if logPriority & 2:
-        print('CRITICAL - log messages found - please check logservice on cluster | %s' % (logMessages))
-        exit(2)
-    elif logPriority & 1:
-        print('WARNING - log messages found - please check logservice on cluster | %s' % (logMessages))
-        exit(1)
-        
-else:
-    print('OK - No new messages found')
-exit(0)
+    if logPriority > 0:
+        if logPriority & 2:
+            print('CRITICAL - log messages found - please check logservice on cluster | %s' % (logMessages))
+            exit(2)
+        elif logPriority & 1:
+            print('WARNING - log messages found - please check logservice on cluster | %s' % (logMessages))
+            exit(1)
+            
+    else:
+        print('OK - No new messages found')
+    exit(0)
+
+except Exception as e:
+    if 'unauthorized' in str(e).lower():
+        print 'no access to EXAoperation: username or password wrong'
+
+    elif 'Unexpected Zope exception: NotFound: Object' in str(e):
+        print 'database instance not found'
+
+    else:
+        from pprint import pprint
+        print('WARNING - internal error| ')
+        pprint(e)
 
