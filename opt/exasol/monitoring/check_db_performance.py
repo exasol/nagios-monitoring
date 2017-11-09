@@ -9,7 +9,7 @@ from xmlrpclib  import ServerProxy
 from time       import time
 
 odbcDriver              = '/opt/exasol/EXASOL_ODBC-6.0.4/lib/linux/x86_64/libexaodbc-uo2214lv2.so'
-pluginVersion           = '17.11'
+pluginVersion           = '17.11.1'
 databaseName            = None
 databaseUser            = None
 databasePassword        = None
@@ -208,7 +208,9 @@ try:
             output = 'OK - performance data transferred | ' + output
         else:
             output = 'WARNING - transaction conflict found | ' + output 
-   
+    else:
+        output = 'OK - performance data transferred | ' + output
+
     sqlConnection.close()
     print(output)
     exit(returnCode)
