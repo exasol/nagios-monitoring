@@ -23,6 +23,7 @@ RUN lighttpd-enable-mod auth
 RUN lighttpd-enable-mod status
 RUN lighttpd-enable-mod nagios3
 RUN lighttpd-enable-mod fastcgi-php
+RUN sed 's/"PHP_FCGI_CHILDREN" => "4"/"PHP_FCGI_CHILDREN" => "1"/g' /etc/lighttpd/conf-enabled/15-fastcgi-php.conf >/tmp/15-fastcgi-php.conf && mv -v /tmp/15-fastcgi-php.conf /etc/lighttpd/conf-enabled/15-fastcgi-php.conf
 
 # configure nagios webinterface
 RUN /bin/bash -c 'htpasswd -ic /etc/nagios3/htpasswd.users nagiosadmin <<< "admin"'
