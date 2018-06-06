@@ -9,7 +9,7 @@ from xmlrpclib  import ServerProxy
 from time       import time
 
 odbcDriver              = '/opt/exasol/EXASOL_ODBC-6.0.4/lib/linux/x86_64/libexaodbc-uo2214lv2.so'
-pluginVersion           = '17.11.2'
+pluginVersion           = '18.06'
 databaseName            = None
 databaseUser            = None
 databasePassword        = None
@@ -97,7 +97,7 @@ if not (hostName and
 def XmlRpcCall(urlPath = ''):
     url = 'https://%s:%s@%s/cluster1%s' % (quote_plus(userName), quote_plus(password), hostName, urlPath)
     if hasattr(ssl, 'SSLContext'):
-        sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+        sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         sslcontext.verify_mode = ssl.CERT_NONE
         sslcontext.check_hostname = False
         return ServerProxy(url, context=sslcontext)

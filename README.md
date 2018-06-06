@@ -104,30 +104,9 @@ Password:
 After adding the cluster, all monitoring services are added to Nagios. You can check by opening the "Services" page:
 ![Nagios3 - Services](/images/pic17.png)
 
-### Using SMTP/Email to get informed about events
-You can directly get informed about Nagios3 events via email if you want. All you need for this is a SMTP server and credentials for an email sender on your SMTP server. Just start the ssmtp wizard and fill in the informations:
-```
-docker exec -ti <container name/id> configure-sstmp [-v]
-```
-If you encounter problems you can add "-v" to start the wizard in verbose mode.
-
-### Other operations
-To mange the Nagios system, there exist a few additional methods:
-
-Command                                                                     | Purpose
-----------------------------------------------------------------------------|---------------------------------------------------------------
-docker exec -ti <container id> nagios-addcluster                            | adding a cluster to the monitoring system
-docker exec -ti <container id> nagios-listcluster                           | list all clusters added by the configuration wizard
-docker exec -ti <container id> nagios-removecluster                         | remove a cluster from the monitoring system
-docker exec -ti <container id> nagios-passwd                                | changes the password for the Nagios webinterface
-docker exec -ti <container id> configure-ssmtp                              | starts ssmtp/email configuration wizard
-docker exec <container id> nagios-getconfig \|base64 -di >config.tar.gz     | (Linux only!) download the Nagios configuration and plugins
-
-You can download the generated configuration files using the Nagios web interface (see "Download Configuration" link in the navigation pane on the left side).
-
-## Troubleshooting / Known problems
-* on Windows docker hosts you need to start your command line prompt (CMD.EXE) with administrator privileges, otherwise pulling the image won't work properly
-* if you got an error like "WARNING - internal error <Fault -1: 'Volume could not be found'>" from check\_db\_diskspace plugin please check your permissions on the EXAStorage volumes and make sure that you didn't change the system labels of those volumes (create own labels if you want to tag them instead of renaming the given ones).
+## Wiki
+You can find more information about troubleshooting, known problems, plugin descriptions, SNMP plugins on our GitHub nagios-monitoring Wiki page:
+https://github.com/EXASOL/nagios-monitoring/wiki
 
 ## Sources
 All sources to create the docker image can be found on GitHub (https://github.com/EXASOL/nagios-monitoring).
@@ -136,8 +115,3 @@ If you want to build the container from scratch you can do by using the followin
 git clone https://github.com/EXASOL/nagios-monitoring
 docker build -t exasol/nagios-monitoring:latest -f Dockerfile .
 ```
-
-## Used 3rd party plugins
-* check_hp: http://www.crowdedplace.com/category/check_hp/
-* check_openmanage: http://folk.uio.no/trondham/software/check_openmanage.html
-* [Fujitsu Software ServerViewSuite Nagios-Core-Plugin](/opt/fujitsu/ServerViewSuite/nagios/README.txt)
