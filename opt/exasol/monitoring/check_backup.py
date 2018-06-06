@@ -8,7 +8,7 @@ from getopt     import getopt
 from xmlrpclib  import ServerProxy
 from datetime   import datetime
 
-pluginVersion               = "17.11"
+pluginVersion               = "18.06"
 databaseName                = None
 hostName                    = None
 userName                    = None
@@ -69,7 +69,7 @@ if not (databaseName and hostName and userName and password):
 def XmlRpcCall(urlPath = ''):
     url = 'https://%s:%s@%s/cluster1%s' % (quote_plus(userName), quote_plus(password), hostName, urlPath)
     if hasattr(ssl, 'SSLContext'):
-        sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+        sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         sslcontext.verify_mode = ssl.CERT_NONE
         sslcontext.check_hostname = False
         return ServerProxy(url, context=sslcontext)
