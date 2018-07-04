@@ -262,7 +262,7 @@ try:
         output = 'WARNING - schema "%s" is using %.1f%% (%.1f GiB) of overall space' % (schemaName, usagePercent, usageGiB) + output
         returnCode = 1
             
-    else:
+    if returnCode == 0:
         output = 'OK - performance data transferred' + output
 
     sqlConnection.close()
