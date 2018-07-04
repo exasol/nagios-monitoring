@@ -9,7 +9,7 @@ from xmlrpclib  import ServerProxy
 from time       import time
 
 odbcDriver              = '/opt/exasol/EXASOL_ODBC-6.0.4/lib/linux/x86_64/libexaodbc-uo2214lv2.so'
-pluginVersion           = '18.06'
+pluginVersion           = '18.07'
 databaseName            = None
 databaseUser            = None
 databasePassword        = None
@@ -20,7 +20,9 @@ logserviceId            = None
 opts, args              = None, None
 maxInterval             = 300 #seconds (interval between checks)
 minInterval             = 90 #seconds
-transactionConflictWarnDuration = 2600 #seconds
+transactionConflictWarnDuration = 3600 #seconds
+trackSchemata           = False
+schemaWarnThreshold     = 0
 
 if name == 'nt':            #OS == Windows
     from tempfile import gettempdir
@@ -29,7 +31,7 @@ elif name == 'posix':       #OS == Linux, Unix, etc.
     cacheDirectory          = r'/var/cache/nagios3'
 
 try:
-    opts, args = getopt(argv[1:], 'hVH:d:u:p:l:a:c:o:')
+    opts, args = getopt(argv[1:], 'hVH:d:u:p:l:a:c:o:s:')
 
 except:
     print "Unknown parameter(s): %s" % argv[1:]
@@ -52,6 +54,7 @@ EXAoperation XMLRPC backup run check (version %s)
     -p <password>           EXAoperation login password
     -l <dbuser login>       DB instance login user
     -a <dbuser passwd>      DB instance login password
+    -s <threshold>          (optional) monitor schemata, treshold = max. usage in percent
     -c <timeout in sec>     (optional) time until a transaction conflict creates a warning
     -o <ODBC driver name>   (optional) ODBC driver name
 """ % (pluginVersion)
@@ -85,13 +88,18 @@ EXAoperation XMLRPC backup run check (version %s)
     elif parameter == '-o':
         odbcDriver = value.strip()
 
+    elif parameter == '-s':
+        schemaWarnThreshold = int(value.strip())
+        trackSchemata = True
+
+
 if not (hostName and 
         userName and 
         password and 
         databaseName and 
         databaseUser and 
         databasePassword):
-    print('Please define at least the following parameters: -H -u -p -d -l -a -s')
+    print('Please define at least the following parameters: -H -u -p -d -l -a')
     exit(4)
 
 def XmlRpcCall(urlPath = ''):
@@ -104,8 +112,8 @@ def XmlRpcCall(urlPath = ''):
     return ServerProxy(url)
 
 try:
-    longDescription = '\n'
     returnCode = 0
+    longDescription = '\n'
     interval = maxInterval
     intervalFileName = join(cacheDirectory, 'check_db_perf_%s_%s.interval' % (hostName, databaseName))
     if isfile(intervalFileName):
@@ -176,10 +184,9 @@ try:
     result = sqlExec.fetchall()
     conflictedSessionPattern = re.compile('session\s+(\d+)\s*$')
     durationPattern = re.compile('\s*(\d+):(\d+):(\d+)\s*$')
-
     numberOfConflicts = 0
     maxDuration = 0
-    
+    transactionConflictWarning = False
     if not None in result:
         numberOfConflicts = len(result)
         for row in result:
@@ -188,12 +195,10 @@ try:
             conflictedSessionIdMatch = conflictedSessionPattern.search(row[1])
             if conflictedSessionIdMatch:
                 conflictedSessionId = conflictedSessionIdMatch.group(1)
-
             duration = None
             durationMatch = durationPattern.search(row[2])
             if durationMatch:
                 duration = int(durationMatch.group(3)) + (int(durationMatch.group(2)) * 60) + (int(durationMatch.group(1)) * 3600)
-
             if maxDuration < duration: maxDuration = duration
             longDescription += 'transaction conflict between %s and %s - duration: %s seconds\n' % (sessionId, conflictedSessionId, duration)
 
@@ -201,19 +206,64 @@ try:
                 numberOfConflicts,
                 maxDuration
         )
-        if maxDuration > transactionConflictWarnDuration: returnCode = 1
-
+        transactionConflictWarning = maxDuration > transactionConflictWarnDuration
     else:
         output += 'number_of_tacs=0;duration_tac_max=0s;'
 
+    #if tracking of schema size is activated, this will only work in Exasol 6.0 and newer
+    schemaUsageWarning = None
+    if trackSchemata:
+        sqlCommand = """select 	(min(HDD_FREE) + sum(VOLUME_SIZE * REDUNDANCY * (100 - "USAGE") / 100.0)) / max(REDUNDANCY) as AVAIL_SPACE,
+		                sum(VOLUME_SIZE * REDUNDANCY * "USAGE"/100.0) / max(REDUNDANCY) as USED_SPACE
+                        from (
+                                select 
+                                        sum(HDD_FREE)       as HDD_FREE, 
+                                        sum(VOLUME_SIZE)    as VOLUME_SIZE, 
+                                        max(USE)            as "USAGE",
+                                        REDUNDANCY,
+                                        TABLESPACE, 
+                                        VOLUME_ID
+                                from SYS.EXA_VOLUME_USAGE
+                                group by VOLUME_ID, TABLESPACE, REDUNDANCY
+                        ); """ #it's a quite complex logic, see SOL-366 for details
+        sqlExec = sqlCursor.execute(sqlCommand)
+        result = sqlExec.fetchone()
+        availSpace = None
+        usedSpace = None
+        usagePercent = 0
+        schemaName = ''
+
+        if not None in result:
+            availSpace = float(result.AVAIL_SPACE) #get the available space (it's calculated in the same redundancy as the DB instance
+            usedSpace = float(result.USED_SPACE)
+        sqlCommand = """select OBJECT_NAME, (MEM_OBJECT_SIZE/1024.0/1024.0/1024.0) AS USAGE_GIB from SYS.EXA_DBA_OBJECT_SIZES
+                        where OBJECT_TYPE = 'SCHEMA'
+                        order by MEM_OBJECT_SIZE desc
+                        limit 1;"""
+        sqlExec = sqlCursor.execute(sqlCommand)
+        result = sqlExec.fetchone()
+        if not None in result:
+            usageGiB = float(result.USAGE_GIB)
+            usagePercent = 100.0 * usageGiB / (availSpace + usedSpace)
+            output += 'biggest_schema=%.1fGiB;' % (result.USAGE_GIB)
+            schemaName = result.OBJECT_NAME
+            schemaUsageWarning = (schemaWarnThreshold <= usagePercent)
+
+    #closing performance data section and starting with status section
+    output = ' | ' + output
     if longDescription.strip() != '':
         output += longDescription
-        if returnCode == 0:
-            output = 'OK - performance data transferred | ' + output
-        else:
-            output = 'WARNING - transaction conflict found | ' + output 
-    else:
-        output = 'OK - performance data transferred | ' + output
+
+    if transactionConflictWarning:
+        output = 'WARNING - transaction conflict found' + output
+        returnCode = 1
+
+    if schemaUsageWarning:
+        output = 'WARNING - schema "%s" is using %.1f%% (%.1f GiB) of overall space' % (schemaName, usagePercent, usageGiB) + output
+        returnCode = 1
+            
+    if returnCode == 0:
+        output = 'OK - performance data transferred' + output
 
     sqlConnection.close()
     print(output)
