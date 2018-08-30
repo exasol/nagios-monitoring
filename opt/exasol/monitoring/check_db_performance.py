@@ -9,7 +9,7 @@ from xmlrpclib  import ServerProxy
 from time       import time
 
 odbcDriver              = '/opt/exasol/EXASOL_ODBC-6.0.4/lib/linux/x86_64/libexaodbc-uo2214lv2.so'
-pluginVersion           = '18.07'
+pluginVersion           = '18.08'
 databaseName            = None
 databaseUser            = None
 databasePassword        = None
@@ -270,6 +270,13 @@ try:
     exit(returnCode)
 
 except Exception as e:
-    print(e)
-    exit(2)
+    message = str(e).replace('%s:%s@%s' % (userName, password, hostName), hostName)
+    if 'unauthorized' in message.lower():
+        print 'no access to EXAoperation: username or password wrong'
 
+    elif 'Unexpected Zope exception: NotFound: Object' in message:
+        print 'database instance not found'
+
+    else:
+        print('UNKNOWN - internal error %s | ' % message.replace('|', '!').replace('\n', ';'))
+    exit(3)
