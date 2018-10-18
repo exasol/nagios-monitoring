@@ -7,7 +7,7 @@ from urllib     import quote_plus
 from getopt     import getopt
 from xmlrpclib  import ServerProxy
 
-pluginVersion           = "18.06"
+pluginVersion           = "18.08"
 hostName                = None
 userName                = None
 password                = None
@@ -63,26 +63,38 @@ def XmlRpcCall(urlPath = ''):
         return ServerProxy(url, context=sslcontext)
     return ServerProxy(url)
 
-cluster = XmlRpcCall('/')
-storage = XmlRpcCall('/storage')
+try:
+    cluster = XmlRpcCall('/')
+    storage = XmlRpcCall('/storage')
 
-notRunningNodes = {}
-nodeList = cluster.getNodeList()
-nodeStatesOutput = ''
-for node in nodeList:
-    nodeState = cluster.getNodeState(node)['status']
-    if nodeState != 'Running':
-        notRunningNodes[node] = nodeState
-        nodeStatesOutput += '\n%s: %s' % (node, nodeState)
+    notRunningNodes = {}
+    nodeList = cluster.getNodeList()
+    nodeStatesOutput = ''
+    for node in nodeList:
+        nodeState = cluster.getNodeState(node)['status']
+        if nodeState != 'Running':
+            notRunningNodes[node] = nodeState
+            nodeStatesOutput += '\n%s: %s' % (node, nodeState)
 
-if len(notRunningNodes) > 0:
-    print('CRITICAL - %i nodes online, %i nodes in other state |%s' % (
-        len(nodeList) - len(notRunningNodes),
-        len(notRunningNodes),
-        nodeStatesOutput
-    ))
-    exit(2)
-else:
-    print('OK - %i nodes online' % len(nodeList))
-exit(0)
+    if len(notRunningNodes) > 0:
+        print('CRITICAL - %i nodes online, %i nodes in other state |%s' % (
+            len(nodeList) - len(notRunningNodes),
+            len(notRunningNodes),
+            nodeStatesOutput
+        ))
+        exit(2)
+    else:
+        print('OK - %i nodes online' % len(nodeList))
+    exit(0)
 
+except Exception as e:
+    message = str(e).replace('%s:%s@%s' % (userName, password, hostName), hostName)
+    if 'unauthorized' in message.lower():
+        print 'no access to EXAoperation: username or password wrong'
+
+    elif 'Unexpected Zope exception: NotFound: Object' in message:
+        print 'database instance not found'
+
+    else:
+        print('UNKNOWN - internal error %s | ' % message.replace('|', '!').replace('\n', ';'))
+    exit(3)

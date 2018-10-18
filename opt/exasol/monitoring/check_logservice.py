@@ -8,7 +8,7 @@ from getopt     import getopt
 from xmlrpclib  import ServerProxy
 from uuid       import uuid4
 
-pluginVersion           = "18.06"
+pluginVersion           = "18.08"
 hostName                = None
 userName                = None
 password                = None
@@ -127,14 +127,13 @@ try:
     exit(0)
 
 except Exception as e:
-    if 'unauthorized' in str(e).lower():
+    message = str(e).replace('%s:%s@%s' % (userName, password, hostName), hostName)
+    if 'unauthorized' in message.lower():
         print 'no access to EXAoperation: username or password wrong'
 
-    elif 'Unexpected Zope exception: NotFound: Object' in str(e):
+    elif 'Unexpected Zope exception: NotFound: Object' in message:
         print 'database instance not found'
 
     else:
-        from pprint import pprint
-        print('WARNING - internal error| ')
-        pprint(e)
-
+        print('UNKNOWN - internal error %s | ' % message.replace('|', '!').replace('\n', ';'))
+    exit(3)

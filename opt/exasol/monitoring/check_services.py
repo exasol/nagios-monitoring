@@ -7,7 +7,7 @@ from pipes      import quote
 from getopt     import getopt
 from xmlrpclib  import ServerProxy
 
-pluginVersion = "18.06"
+pluginVersion = "18.08"
 
 opts, args = None, None
 try:
@@ -68,21 +68,33 @@ def XmlRpcCall(urlPath = ''):
         return ServerProxy(url, context=sslcontext)
     return ServerProxy(url)
 
-cluster = XmlRpcCall('/')
-serviceState = cluster.getServiceState()
-criticalServices = {}
-criticalServiceOutput = ''
-for service in serviceState:
-    serviceName = service[0]
-    serviceState = service[1]
-    if serviceState != 'OK':
-        criticalServices[serviceName] = serviceState
-        criticalServiceOutput += ('%s - %s; ' % (serviceName, serviceState))
+try:
+    cluster = XmlRpcCall('/')
+    serviceState = cluster.getServiceState()
+    criticalServices = {}
+    criticalServiceOutput = ''
+    for service in serviceState:
+        serviceName = service[0]
+        serviceState = service[1]
+        if serviceState != 'OK':
+            criticalServices[serviceName] = serviceState
+            criticalServiceOutput += ('%s - %s; ' % (serviceName, serviceState))
 
-if len(criticalServices) > 0:
-    print('CRITICAL - some service are not OK: %s' % (criticalServiceOutput))
-    exit(2)
-else:
-    print('OK - all node services are OK')
-exit(0)
+    if len(criticalServices) > 0:
+        print('CRITICAL - some service are not OK: %s' % (criticalServiceOutput))
+        exit(2)
+    else:
+        print('OK - all node services are OK')
+    exit(0)
 
+except Exception as e:
+    message = str(e).replace('%s:%s@%s' % (userName, password, hostName), hostName)
+    if 'unauthorized' in message.lower():
+        print 'no access to EXAoperation: username or password wrong'
+
+    elif 'Unexpected Zope exception: NotFound: Object' in message:
+        print 'database instance not found'
+
+    else:
+        print('UNKNOWN - internal error %s | ' % message.replace('|', '!').replace('\n', ';'))
+    exit(3)
