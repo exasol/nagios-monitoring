@@ -1,14 +1,14 @@
-#!/usr/bin/python
-import xmlrpclib, ssl, json
-from os.path    import isfile
-from os         import sep, name
-from sys        import exit, argv, version_info, stdout, stderr
-from urllib     import quote_plus
-from getopt     import getopt
-from xmlrpclib  import ServerProxy
-from uuid       import uuid4
+#!/usr/bin/python3
+import ssl, json
+from os.path            import isfile, isdir
+from os                 import sep, name
+from sys                import exit, argv, version_info, stdout, stderr
+from getopt             import getopt
+from xmlrpc.client      import ServerProxy
+from urllib.parse       import quote_plus
+from uuid               import uuid4
 
-pluginVersion           = "18.08"
+pluginVersion           = "18.10"
 hostName                = None
 userName                = None
 password                = None
@@ -19,17 +19,16 @@ uuidFile                = None
 uuidString              = None
 blacklistFile           = '/opt/exasol/monitoring/check_logservice.blacklist'
 
-if name == 'nt':            #OS == Windows
+cacheDirectory          = r'/var/cache/nagios3'
+if not isdir(cacheDirectory):
     from tempfile import gettempdir
-    cacheDirectory          = gettempdir()
-elif name == 'posix':       #OS == Linux, Unix, etc.
-    cacheDirectory          = r'/var/cache/nagios3'
+    cacheDirectory = gettempdir()
 
 try:
     opts, args = getopt(argv[1:], 'hVH:i:u:p:b:')
 
 except:
-    print "Unknown parameter(s): %s" % argv[1:]
+    print("Unknown parameter(s): %s" % argv[1:])
     opts = []
     opts.append(['-h', None])
 
@@ -38,7 +37,7 @@ for opt in opts:
     value     = opt[1]
     
     if parameter == '-h':
-        print """
+        print("""
 EXAoperation XMLRPC log service monitor (version %s)
   Options:
     -h                      shows this help
@@ -48,7 +47,7 @@ EXAoperation XMLRPC log service monitor (version %s)
     -u <user login>         EXAoperation login user
     -p <password>           EXAoperation login password
     -b <blacklist file>     Blacklist all unwanted logservice lines
-""" % (pluginVersion)
+""" % (pluginVersion))
         exit(0)
     
     elif parameter == '-V':
@@ -76,12 +75,10 @@ if not (hostName and userName and password and logserviceId != None):
 
 def XmlRpcCall(urlPath = ''):
     url = 'https://%s:%s@%s/cluster1%s' % (quote_plus(userName), quote_plus(password), hostName, urlPath)
-    if hasattr(ssl, 'SSLContext'):
-        sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        sslcontext.verify_mode = ssl.CERT_NONE
-        sslcontext.check_hostname = False
-        return ServerProxy(url, context=sslcontext)
-    return ServerProxy(url)
+    sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    sslcontext.verify_mode = ssl.CERT_NONE
+    sslcontext.check_hostname = False
+    return ServerProxy(url, context=sslcontext)
 
 try:
     blacklistArray = []
@@ -129,10 +126,10 @@ try:
 except Exception as e:
     message = str(e).replace('%s:%s@%s' % (userName, password, hostName), hostName)
     if 'unauthorized' in message.lower():
-        print 'no access to EXAoperation: username or password wrong'
+        print('no access to EXAoperation: username or password wrong')
 
     elif 'Unexpected Zope exception: NotFound: Object' in message:
-        print 'database instance not found'
+        print('database instance not found')
 
     else:
         print('UNKNOWN - internal error %s | ' % message.replace('|', '!').replace('\n', ';'))

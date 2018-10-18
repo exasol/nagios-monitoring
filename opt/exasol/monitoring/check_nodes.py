@@ -1,13 +1,13 @@
-#!/usr/bin/python
-import xmlrpclib, ssl, json, time
-from os.path    import isfile, getctime
-from os         import sep
-from sys        import exit, argv, version_info, stdout, stderr
-from urllib     import quote_plus
-from getopt     import getopt
-from xmlrpclib  import ServerProxy
+#!/usr/bin/python3
+import ssl, json, time
+from os.path            import isfile, getctime
+from os                 import sep
+from sys                import exit, argv, version_info, stdout, stderr
+from getopt             import getopt
+from xmlrpc.client      import ServerProxy
+from urllib.parse       import quote_plus
 
-pluginVersion           = "18.08"
+pluginVersion           = "18.10"
 hostName                = None
 userName                = None
 password                = None
@@ -17,7 +17,7 @@ try:
     opts, args = getopt(argv[1:], 'hVH:u:p:')
 
 except:
-    print "Unknown parameter(s): %s" % argv[1:]
+    print("Unknown parameter(s): %s" % argv[1:])
     opts = []
     opts.append(['-h', None])
 
@@ -26,7 +26,7 @@ for opt in opts:
     value     = opt[1]
     
     if parameter == '-h':
-        print """
+        print("""
 EXAoperation XMLRPC nodes monitor (version %s)
   Options:
     -h                      shows this help
@@ -34,7 +34,7 @@ EXAoperation XMLRPC nodes monitor (version %s)
     -H <license server>     domain of IP of your license server
     -u <user login>         EXAoperation login user
     -p <password>           EXAoperation login password
-""" % (pluginVersion)
+""" % (pluginVersion))
         exit(0)
     
     elif parameter == '-V':
@@ -56,12 +56,10 @@ if not (hostName and userName and password):
 
 def XmlRpcCall(urlPath = ''):
     url = 'https://%s:%s@%s/cluster1%s' % (quote_plus(userName), quote_plus(password), hostName, urlPath)
-    if hasattr(ssl, 'SSLContext'):
-        sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        sslcontext.verify_mode = ssl.CERT_NONE
-        sslcontext.check_hostname = False
-        return ServerProxy(url, context=sslcontext)
-    return ServerProxy(url)
+    sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    sslcontext.verify_mode = ssl.CERT_NONE
+    sslcontext.check_hostname = False
+    return ServerProxy(url, context=sslcontext)
 
 try:
     cluster = XmlRpcCall('/')
@@ -90,10 +88,10 @@ try:
 except Exception as e:
     message = str(e).replace('%s:%s@%s' % (userName, password, hostName), hostName)
     if 'unauthorized' in message.lower():
-        print 'no access to EXAoperation: username or password wrong'
+        print('no access to EXAoperation: username or password wrong')
 
     elif 'Unexpected Zope exception: NotFound: Object' in message:
-        print 'database instance not found'
+        print('database instance not found')
 
     else:
         print('UNKNOWN - internal error %s | ' % message.replace('|', '!').replace('\n', ';'))
