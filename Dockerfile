@@ -5,8 +5,8 @@ MAINTAINER EXASOL AG
 ADD apt-proxy /etc/apt/apt.conf.d
 RUN bash -c 'echo "deb http://ftp.de.debian.org/debian/ jessie-backports main" >>/etc/apt/sources.list'
 RUN apt-get -qy update
-RUN apt-get install -qy locales nagios3 lighttpd php5-cgi pnp4nagios python-pyodbc odbcinst1debian2 netcat patch wget ssmtp nagios-snmp-plugins libdigest-hmac-perl unattended-upgrades cron
-
+RUN apt-get install -qy locales nagios3 lighttpd php5-cgi pnp4nagios python3-pip python3-pyodbc odbcinst1debian2 netcat patch wget ssmtp nagios-snmp-plugins libdigest-hmac-perl unattended-upgrades cron
+RUN python3 -m pip install ExasolDatabaseConnector
 # debug section
 RUN apt-get -qy install vim less python3-dialog
 
