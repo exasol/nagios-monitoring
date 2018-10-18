@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-import ssl, json, time, re, importlib.util
-from signal             import signal, alarm, SIGALRM
+import ssl, json, time, re, importlib.util, signal
+#from signal             import signal, alarm, SIGALRM
 from os.path            import isfile, getctime, isdir, join
 from os                 import sep, getcwd
 from sys                import exit, path, argv, version_info, stdout, stderr
@@ -105,14 +105,14 @@ if not (hostName and
     print('Please define at least the following parameters: -H -u -p -d -l -a')
     exit(4)
 
-
 def pluginTimedOut(sig, frame):
     print('CRITICAL - Database did not respond within %i seconds' % (pluginTimeout))
     exit(2)
 
-#set a timeout
-signal(SIGALRM, pluginTimedOut)
-alarm(pluginTimeout)
+#set a timeout if "alarm" is available on signal module
+if importlib.util.find_spec('signal') and hasattr(signal, "alarm"):
+	signal.signal(signal.SIGALRM, pluginTimedOut)
+	signal.alarm(pluginTimeout)
 
 def XmlRpcCall(urlPath = ''):
     url = 'https://%s:%s@%s/cluster1%s' % (quote_plus(userName), quote_plus(password), hostName, urlPath)
