@@ -94,7 +94,7 @@ isContactName = False
 contactName = 'root'
 configurationString = ''
 
-with open('/etc/nagios3/conf.d/contacts_nagios2.cfg', 'r') as f:
+with open('/etc/nagios/conf.d/contacts_nagios2.cfg', 'r') as f:
     fileString = f.read()
     for line in fileString.split('\n'):
         match = defineContactPattern.search(line)
@@ -123,12 +123,12 @@ with open('/etc/nagios3/conf.d/contacts_nagios2.cfg', 'r') as f:
         configurationString += line + '\n'
 
 if not isContactName:
-    print('/etc/nagios3/conf.d/contacts_nagios2.cfg: not able to change root user entry')
+    print('/etc/nagios/conf.d/contacts_nagios2.cfg: not able to change root user entry')
     sys.exit(1)
 
-with open('/etc/nagios3/conf.d/contacts_nagios2.cfg', 'w') as f:
+with open('/etc/nagios/conf.d/contacts_nagios2.cfg', 'w') as f:
     f.write(configurationString)
 
-proc = Popen(['/etc/init.d/nagios3', 'reload'], stdout=PIPE, stderr=STDOUT)
+proc = Popen(['/etc/init.d/nagios', 'restart'], stdout=PIPE, stderr=STDOUT)
 proc.wait()
 

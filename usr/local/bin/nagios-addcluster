@@ -404,12 +404,12 @@ define service{{
 }}
 """.format(**snmpIps[ip])
 
-configFilename = '/etc/nagios3/conf.d/exa_%s.cfg' % clusterName
+configFilename = '/etc/nagios/conf.d/exa_%s.cfg' % clusterName
 f = open(configFilename, 'w')
 f.write(configurationString)
 f.close()
 
 print("*** successfully created Nagios3 Configuration file '%s'" % configFilename)
 
-proc = Popen(['/etc/init.d/nagios3', 'reload'], stdout=PIPE, stderr=STDOUT)
+proc = Popen(['/etc/init.d/nagios', 'restart'], stdout=PIPE, stderr=STDOUT)
 proc.wait()

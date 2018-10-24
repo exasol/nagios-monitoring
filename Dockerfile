@@ -69,6 +69,9 @@ RUN chmod g+s /usr/sbin/ssmtp
 
 # add further patches
 ADD opt/exasol/patches/* /opt/exasol/patches/
+RUN ln -s "/opt/exasol/patches/exasol_bg.png" "/opt/nagios4/share/images"
+RUN cp -f "/opt/exasol/patches/nagios-main.php" "/opt/nagios4/share/main.php"
+RUN bash -c 'patch -p1 /opt/nagios4/share/stylesheets/common.css < /opt/exasol/patches/nagios-exasol-background.patch'
 RUN bash -c 'patch -p1 /opt/check_hp-2.20/check_hp < /opt/exasol/patches/check_hp_snmpv3_aes.patch'
 RUN bash -c 'patch -p1 /opt/fujitsu/ServerViewSuite/nagios/plugin/check_fujitsu_server.pl < /opt/exasol/patches/check_fujitsu_server_snmpv3_verboselevelfix.patch'
 
@@ -76,6 +79,8 @@ RUN bash -c 'patch -p1 /opt/fujitsu/ServerViewSuite/nagios/plugin/check_fujitsu_
 ADD 3rd_party_licenses/check_openmanage-3.7.12-GPLv3.txt /opt/check_openmanage-3.7.12/LICENSE
 ADD 3rd_party_licenses/check_hp-2.20-GPL.txt /opt/check_hp-2.20/LICENSE
 ADD 3rd_party_licenses/Fujitsu_ServerViewSuite_EULA.txt /opt/fujitsu/ServerViewSuite/LICENSE
+ADD 3rd_party_licenses/NagiosCore-GPLv2.txt /opt/nagios4/LICENSE
+ADD 3rd_party_licenses/pnp4nagios-GPLv2.txt /opt/pnp4nagios/LICENSE
 
 # clean up and create entrypoint
 RUN apt-get -yq clean
@@ -86,5 +91,7 @@ ENV LANGUAGE=en_US.UTF-8
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/nagios4/bin:/opt/nagios4/sbin:/opt/pnp4nagios/bin"
 RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 RUN /usr/local/bin/download-odbc-driver
+RUN rm -rf /usr/src/*
 ADD etc/dockerinit /etc/
+WORKDIR /root
 ENTRYPOINT /etc/dockerinit

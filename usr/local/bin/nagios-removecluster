@@ -1,10 +1,10 @@
 #!/bin/bash -e
 configFileName="exa_${1}.cfg"
-configFilePath="/etc/nagios3/conf.d/${configFileName}"
+configFilePath="/etc/nagios/conf.d/${configFileName}"
 
 if [ -e "${configFilePath}" ]; then
     rm -v "${configFilePath}" &&
-    /etc/init.d/nagios3 reload &>/dev/null &&
+    /etc/init.d/nagios restart &>/dev/null &&
     echo "cluster ${1} has been removed"
 else
     echo "unknown cluster name"

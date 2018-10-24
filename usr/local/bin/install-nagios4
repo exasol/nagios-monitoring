@@ -35,4 +35,8 @@ ln -s "/etc/nagios/cgi.cfg" "/opt/nagios4/etc" && \
 ln -s "/etc/nagios/resource.cfg" "/opt/nagios4/etc" && \
 ln -s "/etc/nagios" "/etc/nagios3" && \
 ln -s "/etc/init.d/nagios" "/etc/init.d/nagios3" && \
+sed -r 's#^\s*NagiosRunFile=.*$#NagiosRunFile=/run/nagios/nagios.pid#g' < "/etc/init.d/nagios" > "/tmp/nagios_init" && \
+mv -v "/tmp/nagios_init" "/etc/init.d/nagios" && \
+chmod 755 "/etc/init.d/nagios"
+
 cd $PWD
