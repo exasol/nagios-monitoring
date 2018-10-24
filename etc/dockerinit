@@ -4,12 +4,9 @@ chmod u+s /bin/ping /bin/ping6
 generate-certificate
 download-odbc-driver
 service cron start
-
-(LC_ALL=C 
-    service nagios start;
-    service npcd start;
-    service lighttpd start;
-)
+service nagios start;
+service lighttpd start;
+/opt/pnp4nagios/bin/npcd -d -f /opt/pnp4nagios/etc/npcd.cfg
 
 #don't close init process:
 while true; do sleep 60; done;
