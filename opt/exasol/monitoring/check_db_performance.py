@@ -1,15 +1,22 @@
-#!/usr/bin/python
-import ssl, json, time, pyodbc, re
-from os.path    import isfile, getctime, join
-from os         import sep, name
-from sys        import exit, argv, version_info, stdout, stderr
-from urllib     import quote_plus
-from getopt     import getopt
-from xmlrpclib  import ServerProxy
-from time       import time
+#!/usr/bin/python3
+import ssl, json, time, re, importlib.util, signal
+#from signal             import signal, alarm, SIGALRM
+from os.path            import isfile, getctime, isdir, join
+from os                 import sep, getcwd
+from sys                import exit, path, argv, version_info, stdout, stderr
+from urllib.parse       import quote_plus
+from getopt             import getopt
+from xmlrpc.client      import ServerProxy
+from time               import time
 
-odbcDriver              = '/opt/exasol/EXASOL_ODBC-6.0.4/lib/linux/x86_64/libexaodbc-uo2214lv2.so'
-pluginVersion           = '18.08'
+if not importlib.util.find_spec('ExasolDatabaseConnector'):
+    print('Python module "ExasolDatabaseConnector" not installed. Please install this module using pip:')
+    print('\tpython3 -m pip install ExasolDatabaseConnector')
+    exit(4)
+
+from ExasolDatabaseConnector import Database
+
+pluginVersion           = '18.10'
 databaseName            = None
 databaseUser            = None
 databasePassword        = None
@@ -18,23 +25,23 @@ userName                = None
 password                = None
 logserviceId            = None
 opts, args              = None, None
+pluginTimeout           = 60 #seconds
 maxInterval             = 300 #seconds (interval between checks)
 minInterval             = 90 #seconds
 transactionConflictWarnDuration = 3600 #seconds
 trackSchemata           = False
 schemaWarnThreshold     = 0
 
-if name == 'nt':            #OS == Windows
+cacheDirectory          = r'/var/cache/nagios3'
+if not isdir(cacheDirectory):
     from tempfile import gettempdir
-    cacheDirectory          = gettempdir()
-elif name == 'posix':       #OS == Linux, Unix, etc.
-    cacheDirectory          = r'/var/cache/nagios3'
+    cacheDirectory = gettempdir()
 
 try:
     opts, args = getopt(argv[1:], 'hVH:d:u:p:l:a:c:o:s:')
 
 except:
-    print "Unknown parameter(s): %s" % argv[1:]
+    print("Unknown parameter(s): %s" % argv[1:])
     opts = []
     opts.append(['-h', None])
 
@@ -43,7 +50,7 @@ for opt in opts:
     value     = opt[1]
     
     if parameter == '-h':
-        print """
+        print("""
 EXAoperation XMLRPC backup run check (version %s)
   Options:
     -h                      shows this help
@@ -56,8 +63,7 @@ EXAoperation XMLRPC backup run check (version %s)
     -a <dbuser passwd>      DB instance login password
     -s <threshold>          (optional) monitor schemata, treshold = max. usage in percent
     -c <timeout in sec>     (optional) time until a transaction conflict creates a warning
-    -o <ODBC driver name>   (optional) ODBC driver name
-""" % (pluginVersion)
+""" % (pluginVersion))
         exit(0)
     
     elif parameter == '-V':
@@ -85,9 +91,6 @@ EXAoperation XMLRPC backup run check (version %s)
     elif parameter == '-c':
         transactionConflictWarnDuration = int(value.strip())
 
-    elif parameter == '-o':
-        odbcDriver = value.strip()
-
     elif parameter == '-s':
         schemaWarnThreshold = int(value.strip())
         trackSchemata = True
@@ -102,14 +105,21 @@ if not (hostName and
     print('Please define at least the following parameters: -H -u -p -d -l -a')
     exit(4)
 
+def pluginTimedOut(sig, frame):
+    print('CRITICAL - Database did not respond within %i seconds' % (pluginTimeout))
+    exit(2)
+
+#set a timeout if "alarm" is available on signal module
+if importlib.util.find_spec('signal') and hasattr(signal, "alarm"):
+	signal.signal(signal.SIGALRM, pluginTimedOut)
+	signal.alarm(pluginTimeout)
+
 def XmlRpcCall(urlPath = ''):
     url = 'https://%s:%s@%s/cluster1%s' % (quote_plus(userName), quote_plus(password), hostName, urlPath)
-    if hasattr(ssl, 'SSLContext'):
-        sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        sslcontext.verify_mode = ssl.CERT_NONE
-        sslcontext.check_hostname = False
-        return ServerProxy(url, context=sslcontext)
-    return ServerProxy(url)
+    sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    sslcontext.verify_mode = ssl.CERT_NONE
+    sslcontext.check_hostname = False
+    return ServerProxy(url, context=sslcontext)
 
 try:
     returnCode = 0
@@ -130,18 +140,12 @@ try:
 
     cluster = XmlRpcCall('/')
     database = XmlRpcCall('/db_' + quote_plus(databaseName))
-    odbcConnectionString = 'Driver=%s;AUTOCOMMIT=Y;CONNECTTIMEOUT=2;QUERYTIMEOUT=30;EXASCHEMA=EXA_STATISTICS;EXAHOST=%s;EXAUID=%s;EXAPWD=%s;' % (
-            odbcDriver,
-            database.getDatabaseConnectionString(),
-            databaseUser,
-            databasePassword
-    )
+
     if not database.getDatabaseState() == 'running':
         print('CRITICAL - database instance is not running.')
         exit(2)
 
-    sqlConnection = pyodbc.connect(odbcConnectionString, autocommit=True)
-    sqlCursor = sqlConnection.cursor()
+    db = Database(database.getDatabaseConnectionString(), databaseUser, databasePassword, autocommit = True)
     sqlCommand = """select  MEDIAN(LOAD) LOAD, 
                             MEDIAN(CPU) CPU, 
                             MEDIAN(TEMP_DB_RAM) TEMP_DB_RAM, 
@@ -150,38 +154,35 @@ try:
                             MEDIAN(NET) NET, 
                             MEDIAN(SWAP) SWAP
                     from EXA_STATISTICS.EXA_MONITOR_LAST_DAY
-                    where MEASURE_TIME between ADD_SECONDS(NOW(), -%s) and NOW();
+                    where MEASURE_TIME between ADD_SECONDS(NOW(), -%i) and NOW();
                     """ % (interval)
-    sqlExec = sqlCursor.execute(sqlCommand)
+    result = db.execute(sqlCommand)[0] #fetch a single line
     output = ''
-    result = sqlExec.fetchone()
     if not None in result:
         output += 'load=%.1f;cpu=%.1f%%;tmp_dbram=%.1fGiB;hdd_read=%.1fMBps;hdd_write=%.1fMBps;net=%.1fMBps;swap=%.1fMBps;' % (
-            float(result.LOAD),
-            float(result.CPU),
-            float(result.TEMP_DB_RAM) / 1024.0,
-            float(result.HDD_READ),
-            float(result.HDD_WRITE),
-            float(result.NET),
-            float(result.SWAP)
-        )
+	    float(result[0]),                   #LOAD
+	    float(result[1]),                   #CPU
+	    float(result[2]) / 1024.0,          #TEMP_DB_RAM
+	    float(result[3]),                   #HDD_READ
+	    float(result[4]),                   #HDD_WRITE
+	    float(result[5]),                   #NET
+	    float(result[6])                    #SWAP
+	)
 
     sqlCommand = """select  MEDIAN(USERS) USERS,
                             MEDIAN(QUERIES) QUERIES
                     from EXA_STATISTICS.EXA_USAGE_LAST_DAY
                     where MEASURE_TIME between ADD_SECONDS(NOW(), -%s) and NOW();
                 """ % (interval)
-    sqlExec = sqlCursor.execute(sqlCommand)
-    result = sqlExec.fetchone()
+    result = db.execute(sqlCommand)[0]
     if not None in result:
         output += 'users=%i;queries=%i;' % (
-                int(result.USERS),
-                int(result.QUERIES)
+                int(result[0]),			#USERS
+                int(result[1])			#QUERIES
         )
 
     sqlCommand = "select SESSION_ID, ACTIVITY, DURATION from EXA_DBA_SESSIONS where substr(ACTIVITY, 0, 19) = 'Waiting for session';"
-    sqlExec = sqlCursor.execute(sqlCommand)
-    result = sqlExec.fetchall()
+    result = db.execute(sqlCommand)
     conflictedSessionPattern = re.compile('session\s+(\d+)\s*$')
     durationPattern = re.compile('\s*(\d+):(\d+):(\d+)\s*$')
     numberOfConflicts = 0
@@ -226,27 +227,26 @@ try:
                                 from SYS.EXA_VOLUME_USAGE
                                 group by VOLUME_ID, TABLESPACE, REDUNDANCY
                         ); """ #it's a quite complex logic, see SOL-366 for details
-        sqlExec = sqlCursor.execute(sqlCommand)
-        result = sqlExec.fetchone()
+        result = db.execute(sqlCommand)[0]
         availSpace = None
         usedSpace = None
         usagePercent = 0
         schemaName = ''
 
         if not None in result:
-            availSpace = float(result.AVAIL_SPACE) #get the available space (it's calculated in the same redundancy as the DB instance
-            usedSpace = float(result.USED_SPACE)
-        sqlCommand = """select OBJECT_NAME, (MEM_OBJECT_SIZE/1024.0/1024.0/1024.0) AS USAGE_GIB from SYS.EXA_DBA_OBJECT_SIZES
+            availSpace = float(result[0] ) # AVAIL_SPACE / get the available space (it's calculated in the same redundancy as the DB instance
+            usedSpace = float(result[1]) # USED_SPACE
+        sqlCommand = """select OBJECT_NAME, (MEM_OBJECT_SIZE/1024.0/1024.0/1024.0) AS USAGE_GIB 
+			from SYS.EXA_DBA_OBJECT_SIZES
                         where OBJECT_TYPE = 'SCHEMA'
                         order by MEM_OBJECT_SIZE desc
                         limit 1;"""
-        sqlExec = sqlCursor.execute(sqlCommand)
-        result = sqlExec.fetchone()
+        result = db.execute(sqlCommand)[0]
         if not None in result:
-            usageGiB = float(result.USAGE_GIB)
+            usageGiB = float(result[1]) #USAGE_GIB
             usagePercent = 100.0 * usageGiB / (availSpace + usedSpace)
-            output += 'biggest_schema=%.1fGiB;' % (result.USAGE_GIB)
-            schemaName = result.OBJECT_NAME
+            output += 'biggest_schema=%.1fGiB;' % (usageGiB)
+            schemaName = result[0] #OBJECT_NAME
             schemaUsageWarning = (schemaWarnThreshold <= usagePercent)
 
     #closing performance data section and starting with status section
@@ -265,17 +265,17 @@ try:
     if returnCode == 0:
         output = 'OK - performance data transferred' + output
 
-    sqlConnection.close()
+    db.close()
     print(output)
     exit(returnCode)
 
 except Exception as e:
     message = str(e).replace('%s:%s@%s' % (userName, password, hostName), hostName)
     if 'unauthorized' in message.lower():
-        print 'no access to EXAoperation: username or password wrong'
+        print('no access to EXAoperation: username or password wrong')
 
     elif 'Unexpected Zope exception: NotFound: Object' in message:
-        print 'database instance not found'
+        print('database instance not found')
 
     else:
         print('UNKNOWN - internal error %s | ' % message.replace('|', '!').replace('\n', ';'))
