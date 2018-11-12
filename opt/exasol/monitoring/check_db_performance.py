@@ -16,7 +16,7 @@ if not importlib.util.find_spec('ExasolDatabaseConnector'):
 
 from ExasolDatabaseConnector import Database
 
-pluginVersion           = '18.10'
+pluginVersion           = '18.11'
 databaseName            = None
 databaseUser            = None
 databasePassword        = None
