@@ -38,7 +38,7 @@ if not isdir(cacheDirectory):
     cacheDirectory = gettempdir()
 
 try:
-    opts, args = getopt(argv[1:], 'hVH:d:u:p:l:a:c:o:s:')
+    opts, args = getopt(argv[1:], 'hVH:d:u:p:l:a:c:o:s:t:')
 
 except:
     print("Unknown parameter(s): %s" % argv[1:])
@@ -63,6 +63,7 @@ EXAoperation XMLRPC backup run check (version %s)
     -a <dbuser passwd>      DB instance login password
     -s <threshold>          (optional) monitor schemata, treshold = max. usage in percent
     -c <timeout in sec>     (optional) time until a transaction conflict creates a warning
+    -t <timeout in sec>     (optional) plugin timeout (only capable on posix compliant machines)
 """ % (pluginVersion))
         exit(0)
     
@@ -94,6 +95,9 @@ EXAoperation XMLRPC backup run check (version %s)
     elif parameter == '-s':
         schemaWarnThreshold = int(value.strip())
         trackSchemata = True
+
+    elif parameter == '-t':
+        pluginTimeout = int(value.strip())
 
 
 if not (hostName and 
