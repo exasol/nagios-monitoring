@@ -16,7 +16,7 @@ if not importlib.util.find_spec('ExasolDatabaseConnector'):
 
 from ExasolDatabaseConnector import Database
 
-pluginVersion           = '18.11'
+pluginVersion           = '18.12'
 databaseName            = None
 databaseUser            = None
 databasePassword        = None
@@ -32,7 +32,7 @@ transactionConflictWarnDuration = 3600 #seconds
 trackSchemata           = False
 schemaWarnThreshold     = 0
 
-cacheDirectory          = r'/var/cache/nagios3'
+cacheDirectory          = r'/var/cache/nagios'
 if not isdir(cacheDirectory):
     from tempfile import gettempdir
     cacheDirectory = gettempdir()
@@ -192,7 +192,7 @@ try:
     numberOfConflicts = 0
     maxDuration = 0
     transactionConflictWarning = False
-    if not None in result:
+    if result != None and not None in result:
         numberOfConflicts = len(result)
         for row in result:
             sessionId = str(row[0])

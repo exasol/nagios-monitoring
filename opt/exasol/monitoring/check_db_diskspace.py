@@ -8,7 +8,7 @@ from urllib.parse       import quote_plus
 from xmlrpc.client      import ServerProxy
 
 
-pluginVersion               = "18.10"
+pluginVersion               = "18.12"
 tempUsageWarningTreshold    = 60.0 #percent
 tempUsageCriticalTreshold   = 80.0 #percent
 cacheDuration               = 3600 #seconds
@@ -21,7 +21,7 @@ password                    = None
 opts, args                  = None, None
 cacheDirectory              = None
 
-cacheDirectory          = r'/var/cache/nagios3'
+cacheDirectory          = r'/var/cache/nagios'
 if not isdir(cacheDirectory):
     from tempfile import gettempdir
     cacheDirectory = gettempdir()
