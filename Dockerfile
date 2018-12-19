@@ -41,6 +41,8 @@ ADD var/www/html/index.php /var/www/html/index.php
 ADD opt/exasol/monitoring/* /opt/exasol/monitoring/
 ADD etc/nagios/*.cfg /etc/nagios/
 ADD etc/nagios/conf.d/* /etc/nagios/conf.d/
+RUN find /etc/nagios/conf.d -type f -print0 |xargs -0 chown nagios:nagios
+RUN find /etc/nagios/conf.d -type f -print0 |xargs -0 chmod 775
 RUN sed -r 's# notify-service-by-email# exasol-notify-service-by-email#g' /etc/nagios/conf.d/contacts_nagios2.cfg >/tmp/contacts_nagios2.cfg && mv -v /tmp/contacts_nagios2.cfg /etc/nagios/conf.d/contacts_nagios2.cfg
 
 #install check_openmanage links
