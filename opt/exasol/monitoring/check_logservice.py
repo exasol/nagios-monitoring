@@ -8,7 +8,7 @@ from xmlrpc.client      import ServerProxy
 from urllib.parse       import quote_plus
 from uuid               import uuid4
 
-pluginVersion           = "18.10"
+pluginVersion           = "18.12"
 hostName                = None
 userName                = None
 password                = None
@@ -19,7 +19,7 @@ uuidFile                = None
 uuidString              = None
 blacklistFile           = '/opt/exasol/monitoring/check_logservice.blacklist'
 
-cacheDirectory          = r'/var/cache/nagios3'
+cacheDirectory          = r'/var/cache/nagios'
 if not isdir(cacheDirectory):
     from tempfile import gettempdir
     cacheDirectory = gettempdir()
