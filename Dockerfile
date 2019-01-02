@@ -1,5 +1,5 @@
 FROM debian:stable
-MAINTAINER EXASOL AG
+MAINTAINER Exasol AG
 
 # install packages
 ADD apt-proxy /etc/apt/apt.conf.d

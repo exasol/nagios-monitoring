@@ -74,7 +74,7 @@ UseSTARTTLS=Yes
 with open('/etc/ssmtp/ssmtp.conf', 'w') as f:
     f.write(configurationString)
 
-proc = Popen(['mail', '-v', '-s', 'EXASOL/Nagios3 monitoring container email test', rootEmailAddress], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+proc = Popen(['mail', '-v', '-s', 'exasol/nagios monitoring container email test', rootEmailAddress], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 out, err = proc.communicate(input = "If you can read these lines it seems that the configration has been successfully finished.\n\n")
 
 if verboseMode:

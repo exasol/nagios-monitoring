@@ -3,10 +3,10 @@ export PATH="$PATH:/opt/nagios4/bin:/opt/nagios4/sbin:/opt/pnp4nagios/bin"
 chmod u+s /bin/ping /bin/ping6
 generate-certificate
 download-odbc-driver
-service cron start
-service nagios start;
-service lighttpd start;
-/opt/pnp4nagios/bin/npcd -d -f /opt/pnp4nagios/etc/npcd.cfg
+sleep "0.5s"; service cron start
+sleep "0.5s"; service nagios start;
+sleep "0.5s"; /opt/pnp4nagios/bin/npcd -d -f /opt/pnp4nagios/etc/npcd.cfg
+sleep "0.5s"; service lighttpd start;
 
 #don't close init process:
-while true; do sleep 60; done;
+cat
