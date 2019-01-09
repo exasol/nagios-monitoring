@@ -9,4 +9,4 @@ sleep "0.5s"; /opt/pnp4nagios/bin/npcd -d -f /opt/pnp4nagios/etc/npcd.cfg
 sleep "0.5s"; service lighttpd start;
 
 #don't close init process:
-cat
+while true; do sleep 120s; done;
