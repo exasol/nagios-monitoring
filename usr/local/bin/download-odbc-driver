@@ -11,7 +11,7 @@ if [ ! -d "/opt/exasol/EXASOL_ODBC-6.0.11" ]; then
     wget -nv "$driverUrl" &&
     wget -nv "$md5Url"  &&
     md5sum -c "$md5Name" &&
-    tar xf "$driverName" &&
+    tar --no-same-owner -xf "$driverName" &&
     rm -f "$driverName" "$md5Name" 
     cd "$PWD"
 fi;
