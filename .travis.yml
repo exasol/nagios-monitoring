@@ -1,0 +1,6 @@
+language: generic
+services:
+    - docker
+script:
+    - git clone https://github.com/EXASOL/nagios-monitoring
+    - docker build -t exasol/nagios-monitoring:latest -f Dockerfile .
