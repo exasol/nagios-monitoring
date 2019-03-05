@@ -1,0 +1,10 @@
+language: generic
+services:
+    - docker
+script:
+    - git clone https://github.com/EXASOL/nagios-monitoring
+    - docker build -t exasol/nagios-monitoring:latest -f Dockerfile .
+    - docker create --name exasol-nagios --hostname exasol-nagios exasol/nagios-monitoring:latest
+    - docker start exasol-nagios
+    - sleep 10s #wait until all services have been started
+    - docker exec exasol-nagios bash -c 'pgrep nagios && pgrep lighttpd && pgrep php-cgi'
