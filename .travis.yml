@@ -7,6 +7,4 @@ script:
     - docker create --name exasol-nagios --hostname exasol-nagios exasol/nagios-monitoring:latest
     - docker start exasol-nagios
     - sleep 2s #wait until all services have been started
-    - docker exec exasol-nagios pgrep nagios
-    - docker exec exasol-nagios pgrep lighttpd
-    - docker exec exasol-nagios pgrep php-cgi
+    - docker exec exasol-nagios bash -c 'pgrep nagios && pgrep lighttpd && pgrep php-cgi'
