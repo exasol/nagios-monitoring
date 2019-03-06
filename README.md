@@ -75,8 +75,8 @@ After creating the instance we are able to start it:
 root@demo ~ # docker start exasol-nagios
 exasol-nagios
 ```
-Thats all! Now you have a running Nagios3 enviroment. The login for the Nagios3 web interface is "nagiosadmin" and its default password is "admin". The container uses self-signed SSL certificates which will be automatically created.
-![Nagios3 - Up and Running](/images/pic16.png)
+Thats all! Now you have a running Nagios enviroment. The login for the Nagios web interface, navigate to `https://your_docker_ip:your_local_port`. The container uses a self-signed SSL certificate which will be automatically created. You will be prompted for login credentials. The default username is `nagiosadmin` and the default password is `admin`.
+![Nagios - Up and Running](/images/pic16.png)
 
 ### Adding a cluster
 Adding a cluster is quite simple: you just have to start the configuration wizard and fill out the necessary information. The Nagios configuration files will be generated automatically. The wizard can be started with the following docker command:
@@ -100,10 +100,10 @@ Password:
 Do you want to monitor the database instance "db25_2"? (Y/n)y
 Database monitoring user: exa_monitor
 Password: 
-*** successfully created Nagios3 Configuration file '/etc/nagios3/conf.d/exa_cluster25.cfg'
+*** successfully created Nagios Configuration file '/etc/nagios3/conf.d/exa_cluster25.cfg'
 ```
 After adding the cluster, all monitoring services are added to Nagios. You can check by opening the "Services" page:
-![Nagios3 - Services](/images/pic17.png)
+![Nagios - Services](/images/pic17.png)
 
 ## Wiki
 You can find more information about troubleshooting, known problems, plugin descriptions, SNMP plugins on our GitHub nagios-monitoring Wiki page:
