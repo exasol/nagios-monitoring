@@ -3,6 +3,20 @@ export PATH="$PATH:/opt/nagios4/bin:/opt/nagios4/sbin:/opt/pnp4nagios/bin"
 chmod u+s /bin/ping /bin/ping6
 generate-certificate
 download-odbc-driver
+
+#check if container has been started with mounted and empty /etc/nagios/conf.d folder
+if [ $(find "/etc/nagios/conf.d" -type f -iname "*.cfg"  2>/dev/null |wc -l) == 0 ]; then
+    chown nagios:nagios /etc/nagios/conf.d 2>/dev/null
+    find /etc/nagios/conf.d -print0 | xargs -0 chown nagios:nagios 2>/dev/null
+    tar xf /etc/nagios/conf.d_dist.tar.gz -C / 2>/dev/null
+    if [ $(find "/etc/nagios/conf.d" -type f -iname "*.cfg" 2>/dev/null |wc -l) -gt 0 ]; then
+        echo "/etc/nagios/conf.d has been recreated"
+    else
+        echo "could not write into /etc/nagios/conf.d; please check if volume permissions are set correctly (-v <a>:/etc/nagios/conf.d:rw)"
+        exit 1
+    fi;
+fi;
+
 sleep "0.5s"; service cron start
 sleep "0.5s"; service nagios start;
 sleep "0.5s"; /opt/pnp4nagios/bin/npcd -d -f /opt/pnp4nagios/etc/npcd.cfg
