@@ -6,10 +6,10 @@ download-odbc-driver
 
 #check if container has been started with mounted and empty /etc/nagios/conf.d folder
 if [ $(find "/etc/nagios/conf.d" -type f -iname "*.cfg"  2>/dev/null |wc -l) == 0 ]; then
-    chown nagios:nagios /etc/nagios/conf.d 2>/dev/null
-    find /etc/nagios/conf.d -print0 | xargs -0 chown nagios:nagios 2>/dev/null
-    tar xf /etc/nagios/conf.d_dist.tar.gz -C / 2>/dev/null
-    if [ $(find "/etc/nagios/conf.d" -type f -iname "*.cfg" 2>/dev/null |wc -l) -gt 0 ]; then
+    chown -v nagios:nagios /etc/nagios/conf.d 2>/dev/null
+    find /etc/nagios/conf.d -print0 | xargs -0 chown -v nagios:nagios 2>/dev/null
+    tar xvf /etc/nagios/conf.d_dist.tar.gz -C / 2>/dev/null
+    if [ $(find "/etc/nagios/conf.d" -iname "*.cfg" 2>/dev/null |wc -l) -gt 0 ]; then
         echo "/etc/nagios/conf.d has been recreated"
     else
         echo "could not write into /etc/nagios/conf.d; please check if volume permissions are set correctly (-v <a>:/etc/nagios/conf.d:rw)"
@@ -17,6 +17,24 @@ if [ $(find "/etc/nagios/conf.d" -type f -iname "*.cfg"  2>/dev/null |wc -l) == 
     fi;
 fi;
 
+#check if container has been started with mounted and empty /var/lib/nagios folder
+if [ $(find "/var/lib/nagios" -type d 2>/dev/null |wc -l) -le 1 ]; then
+    chown -v nagios:nagios /var/lib/nagios 2>/dev/null
+    find /var/lib/nagios -print0 | xargs -0 chown -v nagios:nagios 2>/dev/null
+    tar xvf /var/lib/nagios_dist.tar.gz -C / 2>/dev/null
+    if [ $(find "/var/lib/nagios" -type d 2>/dev/null |wc -l) -gt 1 ]; then
+        echo "/var/lib/nagios has been recreated"
+    else
+        echo "could not write into /var/lib/nagios; please check if volume permissions are set correctly (-v <a>:/var/lib/nagios:rw)"
+        exit 1
+    fi;
+fi;
+
+#create npcd directory if not existing
+mkdir -p /opt/pnp4nagios/var/spool /opt/pnp4nagios/var/kohana /opt/pnp4nagios/var/perfdata /opt/pnp4nagios/var/stats
+find /opt/pnp4nagios/var -print0 | xargs -0 chown -v nagios:nagios 2>/dev/null
+
+#start services
 sleep "0.5s"; service cron start
 sleep "0.5s"; service nagios start;
 sleep "0.5s"; /opt/pnp4nagios/bin/npcd -d -f /opt/pnp4nagios/etc/npcd.cfg

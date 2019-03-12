@@ -95,6 +95,7 @@ RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 RUN /usr/local/bin/download-odbc-driver
 RUN rm -rf /usr/src/*
 RUN bash -c 'find /etc/nagios/conf.d -print0 |xargs -0 tar cvzf /etc/nagios/conf.d_dist.tar.gz'
+RUN bash -c 'find /var/lib/nagios -print0 |xargs -0 tar cvzf /var/lib/nagios_dist.tar.gz'
 ADD etc/dockerinit /etc/
 WORKDIR /root
 ENTRYPOINT /etc/dockerinit
