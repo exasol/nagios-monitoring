@@ -1,10 +1,7 @@
-# nagios-monitoring
+# Quick Start Guide: nagios-monitoring
 [![Build Status](https://travis-ci.org/exasol/nagios-monitoring.svg?branch=master)](https://travis-ci.org/exasol/nagios-monitoring)
-
 ###### Please note that this is an open source project which is *not officially supported* by EXASOL. We will try to help you as much as possible, but can't guarantee anything since this is not an official EXASOL product.
-
-# Quick Start Guide
-###### The full documentation can be found in the [Wiki](https://github.com/exasol/nagios-monitoring/wiki) pages on this GitHub project; Use https://github.com/EXASOL/nagios-monitoring to read the full manual since Docker Hub is not able to provide the images inside this git project.
+###### The full documentation can be found in the [Wiki](https://github.com/exasol/nagios-monitoring/wiki) pages on this GitHub project. Use https://github.com/EXASOL/nagios-monitoring to read the full manual since Docker Hub is not able to provide the images inside this git project.
 
 ## Introduction
 The EXASOL nagios monitoring container provides users a simple starting point for setting up a monitoring system for your EXASOL database. By running the installation procedure, a fully working nagios monitoring container will be created and some initial services configured. Afterwards, you can either use this container as your monitoring solution, or extract the nagios configuration for your own monitoring tool. 
