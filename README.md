@@ -6,7 +6,7 @@
 Use https://github.com/EXASOL/nagios-monitoring to read the full manual since Docker Hub is not able to provide the images inside this git project.
 
 # Quick Start Guide
-###### The full documentation can be found in the [Wiki](https://github.com/exasol/nagios-monitoring/wiki/Using-volumes-to-store-persistent-data) pages on this GitHub project
+###### The full documentation can be found in the [Wiki](https://github.com/exasol/nagios-monitoring/wiki) pages on this GitHub project
 
 ## Introduction
 The EXASOL nagios monitoring container provides users a simple starting point for setting up a monitoring system for your EXASOL database. By running the installation procedure, a fully working nagios monitoring container will be created and some initial services configured. Afterwards, you can either use this container as your monitoring solution, or extract the nagios configuration for your own monitoring tool. 
