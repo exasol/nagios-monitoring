@@ -104,7 +104,7 @@ Database monitoring user: exa_monitor
 Password: 
 *** successfully created Nagios Configuration file '/etc/nagios3/conf.d/exa_cluster25.cfg'
 ```
-This example shows how to create a docker container without saving your configuration persistent into volumes (stateless containers). If you want to use a persistent storage for your configuration and check states please have a look in the Wiki: https://github.com/exasol/nagios-monitoring/wiki/Using-volumes-to-store-persistent-data
+This example shows how to create a docker container without saving your configuration persistent into volumes (stateless containers). If you want to use a persistent storage for your configuration and check states please have a look into the Wiki of this GitHub project: https://github.com/exasol/nagios-monitoring/wiki/Using-volumes-to-store-persistent-data
 
 After adding the cluster, all monitoring services are added to Nagios. You can check by opening the "Services" page:
 ![Nagios - Services](/images/pic17.png)
