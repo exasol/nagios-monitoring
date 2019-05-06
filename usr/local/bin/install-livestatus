@@ -1,0 +1,12 @@
+#!/bin/bash -e
+oldpwd="$PWD"
+cd "/usr/src" &&
+apt-get -yq install librrd-dev libboost-all-dev &&
+wget "https://mathias-kettner.de/support/1.5.0p16/mk-livestatus-1.5.0p16.tar.gz" &&
+tar xf "mk-livestatus-1.5.0p16.tar.gz" &&
+cd "mk-livestatus-1.5.0p16" && 
+./configure --prefix=/usr --with-nagios4 &&
+make &&
+make install &&
+echo "broker_module=/usr/lib/mk-livestatus/livestatus.o /run/nagios/live" >> "/etc/nagios/nagios.cfg" &&
+echo "mk-livestatus has been installed, please restart Nagios"
