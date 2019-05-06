@@ -5,6 +5,7 @@ MAINTAINER Exasol AG
 ADD apt-proxy /etc/apt/apt.conf.d
 ADD etc/apt/sources.list.d/stable.list /etc/apt/sources.list.d/stable.list
 RUN apt-get -qy update
+RUN apt-get -qy full-upgrade
 RUN apt-get install -qy locales lighttpd php-cgi python3-pip python3-pyodbc unixodbc netcat patch wget ssmtp libdigest-hmac-perl unattended-upgrades apache2-utils cron nagios-plugins nagios-snmp-plugins
 RUN python3 -m pip install ExasolDatabaseConnector
 
