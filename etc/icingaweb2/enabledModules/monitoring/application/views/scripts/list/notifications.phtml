@@ -1,0 +1,92 @@
+<?php
+use Icinga\Module\Monitoring\Object\Host;
+use Icinga\Module\Monitoring\Object\Service;
+
+if (! $this->compact): ?>
+<div class="controls">
+    <?= $this->tabs ?>
+    <?= $this->paginator ?>
+    <div class="sort-controls-container">
+        <?= $this->limiter ?>
+        <?= $this->sortBox ?>
+    </div>
+    <?= $this->filterEditor ?>
+</div>
+<?php endif ?>
+<div class="content">
+<?php if (! $notifications->hasResult()): ?>
+    <p><?= $this->translate('No notifications found matching the filter.') ?></p>
+</div>
+<?php return; endif ?>
+    <table data-base-target="_next" class="table-row-selectable state-table">
+    <tbody>
+    <?php foreach ($notifications->peekAhead($this->compact) as $notification):
+        if (isset($notification->service_description)) {
+            $isService = true;
+            $stateLabel = Service::getStateText($notification->notification_state, true);
+            $stateName = Service::getStateText($notification->notification_state);
+        } else {
+            $isService = false;
+            $stateLabel = Host::getStateText($notification->notification_state, true);
+            $stateName = Host::getStateText($notification->notification_state);
+        }
+    ?>
+        <tr>
+            <td class="state-col state-<?= $stateName ?>">
+                <div class="state-label"><?= $stateLabel ?></div>
+                <div class="state-meta">
+                    <?= $this->timeAgo($notification->notification_timestamp, $this->compact) ?>
+                </div>
+            </td>
+            <td>
+                <div class="state-header">
+                <?php if ($isService): ?>
+                    <?= $this->icon('service', $this->translate('Service')); ?>
+                    <?= $this->link()->service(
+                        $notification->service_description,
+                        $notification->service_display_name,
+                        $notification->host_name,
+                        $notification->host_display_name,
+                        'rowaction'
+                    ) ?>
+                <?php else: ?>
+                    <?= $this->icon('host', $this->translate('Host')); ?>
+                    <?= $this->link()->host($notification->host_name, $notification->host_display_name) ?>
+                <?php endif ?>
+                <?php if (! $this->contact): ?>
+                    <div class="notification-recipient">
+                    <?php if ($notification->notification_contact_name): ?>
+                        <?= sprintf(
+                            $this->translate('Sent to %s'),
+                            $this->qlink(
+                                $notification->notification_contact_name,
+                                'monitoring/show/contact',
+                                array('contact_name' => $notification->notification_contact_name)
+                            )
+                        ) ?>
+                    <?php else: ?>
+                        <?= $this->translate('Not sent out to any contact') ?>
+                    <?php endif ?>
+                    </div>
+                <?php endif ?>
+                </div>
+                <p class="overview-plugin-output"><?= $this->pluginOutput($this->ellipsis($notification->notification_output, 10000), true) ?></p>
+            </td>
+        </tr>
+    <?php endforeach ?>
+    </tbody>
+    </table>
+<?php if ($notifications->hasMore()): ?>
+    <div class="action-links">
+        <?= $this->qlink(
+            $this->translate('Show More'),
+            $this->url(isset($notificationsUrl) ? $notificationsUrl : null)->without(array('view', 'limit')),
+            null,
+            array(
+                'class'             => 'action-link',
+                'data-base-target'  => '_next'
+            )
+        ); ?>
+    </div>
+<?php endif ?>
+</div>
