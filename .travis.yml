@@ -8,18 +8,14 @@ jobs:
       name: "Checkout soruces"
       script:
           - git clone -b icinga2-satellite-host https://github.com/EXASOL/nagios-monitoring
-    - stage: build
-      name: "Build container" 
+    - stage: buildtest
+      name: "Build and test container" 
       script:
           - docker build -t exasol/icinga-monitoring:latest -f Dockerfile .
-    - stage: test
-      name: "Test container" 
-      script:
           - docker create --name exasol-icinga --hostname exasol-icinga exasol/icinga-monitoring:latest
           - docker start exasol-icinga
           - sleep 30s #wait until all services have been started
           - docker exec exasol-icinga bash -c 'pgrep icinga2 && pgrep apache2 && pgrep mysqld'
 stages:
   - checkout
-  - build
-  - test
+  - buildtest
