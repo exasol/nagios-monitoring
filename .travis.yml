@@ -2,7 +2,7 @@ language: generic
 services:
     - docker
 script:
-    - git clone https://github.com/EXASOL/nagios-monitoring/tree/icinga2-satellite-host
+    - git clone -b icinga2-satellite-host https://github.com/EXASOL/nagios-monitoring
     - docker build -t exasol/icinga-monitoring:latest -f Dockerfile .
     - docker create --name exasol-icinga --hostname exasol-icinga exasol/icinga-monitoring:latest
     - docker start exasol-icinga
