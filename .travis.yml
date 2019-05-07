@@ -7,4 +7,4 @@ script:
     - docker create --name exasol-icinga --hostname exasol-icinga exasol/icinga-monitoring:latest
     - docker start exasol-icinga
     - sleep 15s #wait until all services have been started
-    - docker exec exasol-icinga bash -c 'pgrep icinga2 && pgrep apache2 && pgrep /usr/sbin/mysqld'
+    - docker exec exasol-icinga bash -c 'pgrep icinga2 && pgrep apache2 && pgrep mysqld'
