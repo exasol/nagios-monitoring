@@ -1,10 +1,10 @@
-# Quick Start Guide: nagios-monitoring
-[![Build Status](https://travis-ci.org/exasol/nagios-monitoring.svg?branch=master)](https://travis-ci.org/exasol/nagios-monitoring)
+# Quick Start Guide: icinga-monitoring
+[![Build Status](https://travis-ci.org/exasol/nagios-monitoring.svg?branch=icinga2-satellite-host)](https://travis-ci.org/exasol/nagios-monitoring)
 ###### Please note that this is an open source project which is *not officially supported* by EXASOL. We will try to help you as much as possible, but can't guarantee anything since this is not an official EXASOL product.
-###### The full documentation can be found in the [Wiki](https://github.com/exasol/nagios-monitoring/wiki) pages on this GitHub project. 
+###### The full documentation can be found in the [Wiki](https://github.com/exasol/icinga-monitoring/wiki) pages on this GitHub project. 
 
 ## Introduction
-The EXASOL nagios monitoring container provides users a simple starting point for setting up a monitoring system for your EXASOL database. By running the installation procedure, a fully working nagios monitoring container will be created and some initial services configured. Afterwards, you can either use this container as your monitoring solution, or extract the nagios configuration for your own monitoring tool. 
+The EXASOL icinga monitoring container provides users a simple starting point for setting up a monitoring system for your EXASOL database. By running the installation procedure, a fully working icinga monitoring container will be created and some default services to monitor the created host. Afterwards, you can either use this container as your monitoring solution, or extract the icinga configuration for your own monitoring tool. 
 
 ## Necessary preparations on EXASOL database clusters
 * for using the XMLRPC API, you need an EXAoperation user having at least the supervisor role 
@@ -30,7 +30,7 @@ Granting access for a specific EXAStorage volume can be done by clicking on "EXA
 ![EXAStorage - Editing Volumes](/images/pic11.png)
 
 ### Creating the logservice
-The nagios monitoring bundle also contains an event-based check for cluster log messages. This check needs a logservice with all the desired options and will notify you as soon as there is an entry with a log priority higher than "WARNING". Click on "Monitoring" on the navigation pane where you might already find an appropriate logservice. Otherwise we recommend to create a new logservice with the following options:
+The icinga2 monitoring bundle also contains an event-based check for cluster log messages. This check needs a logservice with all the desired options and will notify you as soon as there is an entry with a log priority higher than "WARNING". Click on "Monitoring" on the navigation pane where you might already find an appropriate logservice. Otherwise we recommend to create a new logservice with the following options:
 
 * Minimum Log Priority: Information
 * EXAClusterOS Services: <All>
@@ -50,68 +50,39 @@ GRANT CREATE SESSION TO exa_monitor;
 GRANT SELECT ANY DICTIONARY TO exa_monitor;
 ```
 
-## Installing and managing the EXASOL nagios docker container
-The first step for the installation procedure is to create a new docker instance with the EXASOL nagios image. This image is publicly available and you can find it using the command line options of docker:
+## Installing and managing the EXASOL icinga docker container
+The first step for the installation procedure is to create a new docker instance with the EXASOL icinga image. This image is publicly available and you can find it using the command line options of docker:
 ```
 root@demo ~ # docker search EXASOL
 NAME                       DESCRIPTION                                     STARS     OFFICIAL   AUTOMATED
 exasol/script-languages    Pluggable EXASOL UDF Scripts                    0                    [OK]
-exasol/nagios-monitoring   lighttpd + nagios3 for EXASolution DB inst...   0                    [OK]
+exasol/icinga-monitoring   apache2 + icinga2 for EXASolution DB inst...    0                    [OK]
 ```
 
-The nagios monitoring image needs a port for the nagios web interface. If your local port "443" isn't used yet, we suggest to use this port for the web interface. 
+The icinga monitoring image needs a port for the icingaweb2 interface. If your local port "80" isn't used yet, we suggest to use this port for the web interface. 
 ```
-docker create -p<your local port>:443 --name <docker container name> --hostname <hostname inside container> exasol/nagios-monitoring:latest
+docker create -p<your local port>:80 --name <docker container name> --hostname <hostname inside container> exasol/icinga-monitoring:latest
 ```
-Example for default HTTPS port 443 and "exasol-nagios" as name for the container:
+Example for default HTTPS port 80 and "exasol-icinga" as name for the container:
 ```
-docker create -p443:443 --name exasol-nagios --hostname exasol-nagios exasol/nagios-monitoring:latest
+docker create -p80:80 --name exasol-icinga --hostname exasol-icinga exasol/icinga-monitoring:latest
 ```
 After creating the instance we are able to start it:
 ```
-root@demo ~ # docker start exasol-nagios
-exasol-nagios
+root@demo ~ # docker start exasol-icinga
+exasol-icinga
 ```
-Thats all! Now you have a running Nagios enviroment. The login for the Nagios web interface, navigate to `https://your_docker_ip:your_local_port`. The container uses a self-signed SSL certificate which will be automatically created. You will be prompted for login credentials. The default username is `nagiosadmin` and the default password is `admin`.
-![Nagios - Up and Running](/images/pic16.png)
+Thats all! Now you have a running Nagios enviroment. The login for the Nagios web interface, navigate to `http://your_docker_ip:your_local_port/icingaweb2`. 
 
-### Adding a cluster
-Adding a cluster is quite simple: you just have to start the configuration wizard and fill out the necessary information. The Nagios configuration files will be generated automatically. The wizard can be started with the following docker command:
-```
-docker exec -ti <container name/id> nagios-addcluster
-```
-A full walkthrough for a cluster may look like this:
-```
-root@demo ~ # docker exec -ti exasol-nagios nagios-addcluster
-Cluster name [A-Za-z0-9]: cluster25
-License server IP address: 10.70.0.50
-EXAoperation user (must have at least the supervisor role): monitor
-EXAoperation password: 
-Logservice number: 1
-IP addresses of all cluster nodes (connection range): 10.70.0.51..59
-
-*** trying to connect...
-Do you want to monitor the database instance "db25_1"? (Y/n)y
-Database monitoring user: exa_monitor
-Password: 
-Do you want to monitor the database instance "db25_2"? (Y/n)y
-Database monitoring user: exa_monitor
-Password: 
-*** successfully created Nagios Configuration file '/etc/nagios3/conf.d/exa_cluster25.cfg'
-```
-This example shows how to create a docker container without saving your configuration persistent into volumes (stateless containers). If you want to use a persistent storage for your configuration and check states please have a look into the Wiki of this GitHub project: https://github.com/exasol/nagios-monitoring/wiki/Using-volumes-to-store-persistent-data
-
-After adding the cluster, all monitoring services are added to Nagios. You can check by opening the "Services" page:
-![Nagios - Services](/images/pic17.png)
 
 ## Wiki
-You can find more information about troubleshooting, known problems, plugin descriptions, SNMP plugins on our GitHub nagios-monitoring Wiki page:
-https://github.com/EXASOL/nagios-monitoring/wiki
+You can find more information about troubleshooting, known problems, plugin descriptions, SNMP plugins on our GitHub icinga-monitoring Wiki page:
+https://github.com/EXASOL/icinga-monitoring/wiki
 
 ## Sources
-All sources to create the docker image can be found on GitHub (https://github.com/EXASOL/nagios-monitoring).
+All sources to create the docker image can be found on GitHub (https://github.com/EXASOL/icinga-monitoring).
 If you want to build the container from scratch you can do by using the following lines:
 ```
-git clone https://github.com/EXASOL/nagios-monitoring
-docker build -t exasol/nagios-monitoring:latest -f Dockerfile .
+git clone -b icinga2-satellite-host https://github.com/EXASOL/nagios-monitoring
+docker build -t exasol/icinga-monitoring:latest -f Dockerfile .
 ```
