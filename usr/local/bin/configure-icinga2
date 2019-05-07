@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# start db
+/etc/init.d/mysql start
+
+# configure db
+mysql --user="root" --password="" -e "DROP DATABASE IF EXISTS test "
+mysql --user="root" --password="" -e "UPDATE mysql.user SET Password = PASSWORD('password') WHERE User = 'root'"
+mysql --user="root" -e "FLUSH PRIVILEGES"
+
+
+# configure icinga2 webinterface
+useradd -s /bin/false icingaadmin
+usermod -a -G icingaweb2 www-data
+
+
+# configure mysql for icinga2 webinterface
+echo icinga2-ido-mysql icinga2-ido-mysql/app-password-confirm string "password"  | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/mysql/password-confirm string "password"  | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/upgrade-error: abort | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/remote/host: localhost | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/db/app-user: icinga2@localhost | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/mysql/dbconfig-install boolean "true"  | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/db/dbname: icinga2 | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/remove-error: abort | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/mysql/admin-user: root | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/dbconfig-reinstall boolean "true"  | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/internal/reconfiguring boolean "false"  | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/purge: false | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/mysql/admin-pass string "password"  | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/mysql/app-pass string "password"  | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/dbconfig-upgrade boolean "true"  | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/mysql/password-configrm string "password"  | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/dbconfig-install boolean "true"  | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/password-confirm string "password"  | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/passwords-do-not-match: | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/upgrade-backup boolean "true"  | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/remote/port: | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/mysql/method: Unix socket | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/install-error: abort | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/enable boolean "false"  | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/remote/newhost: | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/internal/skip-preseed boolean "false"  | debconf-set-selections
+echo icinga2-ido-mysql icinga2-ido-mysql/dbconfig-remove boolean "true"  | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/database-type: mysql | debconf-set-selections
+#echo icinga2-ido-mysql icinga2-ido-mysql/missing-db-package-error: abort | debconf-set-selections
+
+#debconf-show icinga2-ido-mysql
+apt-get -y install icinga2-ido-mysql
+
+
+# stop db again
+/etc/init.d/mysql stop
+
