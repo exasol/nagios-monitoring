@@ -10,12 +10,12 @@ jobs:
           - git clone -b icinga2-satellite-host https://github.com/EXASOL/nagios-monitoring
     - stage: "Build Test"
       name: "Build and test container" 
-      - script: "docker build -t exasol/icinga-monitoring:latest -f Dockerfile ."
-        name: "Build container"
-      - script: "docker create --name exasol-icinga --hostname exasol-icinga exasol/icinga-monitoring:latest && docker start exasol-icinga"
-        name: "Create container"
-      - script: "sleep 30s && docker exec exasol-icinga bash -c 'pgrep icinga2 && pgrep apache2 && pgrep mysqld'"
-        name: "Test container"
+    - script: "docker build -t exasol/icinga-monitoring:latest -f Dockerfile ."
+      name: "Build container"
+    - script: "docker create --name exasol-icinga --hostname exasol-icinga exasol/icinga-monitoring:latest && docker start exasol-icinga"
+      name: "Create container"
+    - script: "sleep 30s && docker exec exasol-icinga bash -c 'pgrep icinga2 && pgrep apache2 && pgrep mysqld'"
+      name: "Test container"
 stages:
   - "Prepare"
   - "Build Test"
