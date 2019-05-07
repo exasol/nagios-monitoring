@@ -8,7 +8,8 @@ jobs:
       name: "Checkout soruces"
       script:
           - git clone -b icinga2-satellite-host https://github.com/EXASOL/nagios-monitoring
-    - stage: "Build Stage1"
+    - stage: "Stage1"
+      name: "Checkout sources"
     - script: "docker build -t exasol/icinga-monitoring:latest -f Dockerfile ."
       name: "Build container" 
     - script: "docker create --name exasol-icinga --hostname exasol-icinga exasol/icinga-monitoring:latest && docker start exasol-icinga"
@@ -17,4 +18,4 @@ jobs:
       name: "Test container"
 stages:
   - "Prepare"
-  - "Build Test"
+  - "Stage1"
