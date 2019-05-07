@@ -12,14 +12,14 @@ jobs:
       name: "Build container" 
       script: 
           - docker build -t exasol/icinga-monitoring:latest -f Dockerfile .
-      name: "Create container"
+    - stage: "Stage1 test"
+      name: "Create and test container"
       script: 
           - docker create --name exasol-icinga --hostname exasol-icinga exasol/icinga-monitoring:latest 
           - docker start exasol-icinga
-      name: "Test container"
-      script: 
           - sleep 30s 
           - docker exec exasol-icinga bash -c 'pgrep icinga2 && pgrep apache2 && pgrep mysqld'
 stages:
   - "Prepare"
   - "Stage1"
+  - "Stage1 test"
