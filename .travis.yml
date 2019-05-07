@@ -12,7 +12,6 @@ jobs:
       name: "Build container" 
       script: 
           - docker build -t exasol/icinga-monitoring:latest -f Dockerfile .
-    - stage: "Stage1 test"
       name: "Create and test container"
       script: 
           - docker create --name exasol-icinga --hostname exasol-icinga exasol/icinga-monitoring:latest 
