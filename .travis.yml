@@ -6,13 +6,13 @@ jobs:
   include:
     - stage: Stage1
       name: "Creates exasol icinga container for stage1"
-      - script: "git clone -b icinga2-satellite-host https://github.com/EXASOL/nagios-monitoring"
-        name: "Checkout sources"
-      - script: "docker build -t exasol/icinga-monitoring:latest -f Dockerfile ."
-        name: "Build container" 
-      - script: "docker create --name exasol-icinga --hostname exasol-icinga exasol/icinga-monitoring:latest"
-        name: "Start container" 
-      - script: "docker start exasol-icinga && sleep 30s && docker exec exasol-icinga bash -c 'pgrep icinga2 && pgrep apache2 && pgrep mysqld"
-        name: "Test container" 
+    - script: "git clone -b icinga2-satellite-host https://github.com/EXASOL/nagios-monitoring"
+      name: "Checkout sources"
+    - script: "docker build -t exasol/icinga-monitoring:latest -f Dockerfile ."
+      name: "Build container" 
+    - script: "docker create --name exasol-icinga --hostname exasol-icinga exasol/icinga-monitoring:latest"
+      name: "Start container" 
+    - script: "docker start exasol-icinga && sleep 30s && docker exec exasol-icinga bash -c 'pgrep icinga2 && pgrep apache2 && pgrep mysqld"
+      name: "Test container" 
 stages:
   - Stage1
