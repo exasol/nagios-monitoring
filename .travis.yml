@@ -8,7 +8,7 @@ jobs:
       name: "Build exasol icinga container for stage1"
       script:
       - echo "exaexaexa" | docker login -u "dschlieder" --password-stdin
-      - docker build -t exasol/icinga-monitoring:stage1 -f Dockerfile 
+      - docker build -t exasol/icinga-monitoring:stage1 -f Dockerfile .
       - docker images
       - docker tag exasol/icinga-monitoring:stage1 dschlieder/parking:stage1
       - docker push dschlieder/parking:stage1
