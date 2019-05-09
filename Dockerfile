@@ -48,6 +48,9 @@ RUN icingacli module enable setup
 RUN icingacli module enable doc
 RUN icingacli module enable translation
 
+# disable unwatend features
+RUN icinga2 feature disable notification
+
 # configure icingaadmin password
 RUN /bin/bash -c 'htpasswd -ic /etc/icingaweb2/htpasswd.users icingaadmin <<< "admin"'
 
