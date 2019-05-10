@@ -39,6 +39,7 @@ RUN chmod g+s /etc/icingaweb2 -R
 #RUN icinga2 feature enable graphite
 #RUN icinga2 feature enable influxdb
 RUN icinga2 feature enable perfdata
+RUN icinga2 feature enable command
 RUN icinga2 feature enable statusdata
 RUN icinga2 feature enable livestatus
 RUN icinga2 feature enable ido-mysql
