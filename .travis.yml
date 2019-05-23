@@ -10,12 +10,12 @@ jobs:
       - echo "exaexaexa" | docker login -u "dschlieder" --password-stdin
       - docker build -t exasol/icinga-monitoring:stage1 -f Dockerfile .
       - docker images
-      - docker tag exasol/icinga-monitoring:stage1 dschlieder/parking:stage1
-      - docker push dschlieder/parking:stage1
+      - docker tag exasol/icinga-monitoring:stage1 dschlieder/parking:icinga-monitoring
+      - docker push dschlieder/parking:icinga-monitoring
     - stage: stage1-test
       name: "Create and test exasol icinga stage1 container (basic)"
       script:
-      - docker create --name exasol-icinga --hostname exasol-icinga dschlieder/parking:stage1
+      - docker create --name exasol-icinga --hostname exasol-icinga dschlieder/parking:icinga-monitoring
       - docker start exasol-icinga && sleep 30s 
       - docker exec exasol-icinga bash -c 'pgrep icinga2 && pgrep apache2 && pgrep mysqld'
       - docker exec exasol-icinga bash -c 'TEST=$( wget -S  http://icingaadmin:admin@localhost/icingaweb2/ 2>&1 |grep HTTP/ | tail -n 1) && if [[ "$TEST" == "  HTTP/1.1 200 OK" ]]; then echo "success" && /bin/true; else echo "failed" && /bin/false; fi'
