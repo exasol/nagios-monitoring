@@ -290,7 +290,6 @@ try:
 
 except Exception as e:
     message = str(e)
-    a = fail
     if password and userName:
         message = message.replace('%s:%s@%s' % (userName, password, hostName), hostName)
 
