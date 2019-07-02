@@ -16,7 +16,7 @@ if not importlib.util.find_spec('ExasolDatabaseConnector'):
 
 from ExasolDatabaseConnector import Database
 
-pluginVersion           = '18.12'
+pluginVersion           = '19.7'
 databaseName            = None
 databaseUser            = None
 databasePassword        = None
@@ -24,6 +24,7 @@ hostName                = None
 userName                = None
 password                = None
 logserviceId            = None
+connectionString        = None
 opts, args              = None, None
 pluginTimeout           = 60 #seconds
 maxInterval             = 300 #seconds (interval between checks)
@@ -38,7 +39,7 @@ if not isdir(cacheDirectory):
     cacheDirectory = gettempdir()
 
 try:
-    opts, args = getopt(argv[1:], 'hVH:d:u:p:l:a:c:o:s:t:')
+    opts, args = getopt(argv[1:], 'hVH:d:u:p:l:a:c:o:s:t:C:')
 
 except:
     print("Unknown parameter(s): %s" % argv[1:])
@@ -64,6 +65,10 @@ EXAoperation XMLRPC backup run check (version %s)
     -s <threshold>          (optional) monitor schemata, treshold = max. usage in percent
     -c <timeout in sec>     (optional) time until a transaction conflict creates a warning
     -t <timeout in sec>     (optional) plugin timeout (only capable on posix compliant machines)
+
+  Instead of using ExaOperation the database can be addressed using a connection string (no -u -d -p necessary then):
+    -C <connection string>  (alternative) connection string of the database to be monitored
+
 """ % (pluginVersion))
         exit(0)
     
@@ -99,14 +104,24 @@ EXAoperation XMLRPC backup run check (version %s)
     elif parameter == '-t':
         pluginTimeout = int(value.strip())
 
+    elif parameter == '-C':
+        if re.match('^\s*([0-9.,:]+\:\d+)\s*$', value):
+            connectionString = value.strip()
+        else:
+            print('UNKNOWN - "%s" is not a valid connection string' % value)
 
-if not (hostName and 
+if not (((hostName and 
         userName and 
-        password and 
-        databaseName and 
+        password and
+        databaseName) or
+        connectionString) and
         databaseUser and 
         databasePassword):
-    print('Please define at least the following parameters: -H -u -p -d -l -a')
+    print('Please define at least the following parameters: -H -u -p -d -l -a  or  -C -l -a')
+    exit(4)
+
+if connectionString and (userName or password or databaseName):
+    print('The -C option cannot be combined together with -H -u -d -p')
     exit(4)
 
 def pluginTimedOut(sig, frame):
@@ -142,14 +157,14 @@ try:
         with open(intervalFileName, 'w') as f:
             f.write(str(time()))
 
-    cluster = XmlRpcCall('/')
-    database = XmlRpcCall('/db_' + quote_plus(databaseName))
-
-    if not database.getDatabaseState() == 'running':
-        print('CRITICAL - database instance is not running.')
-        exit(2)
-
-    db = Database(database.getDatabaseConnectionString(), databaseUser, databasePassword, autocommit = True)
+    if not connectionString:
+        database = XmlRpcCall('/db_' + quote_plus(databaseName))
+        if not database.getDatabaseState() == 'running':
+            print('CRITICAL - database instance is not running.')
+            exit(2)
+        connectionString = database.getDatabaseConnectionString()
+    
+    db = Database(connectionString, databaseUser, databasePassword, autocommit = True)
     sqlCommand = """select  MEDIAN(LOAD) LOAD, 
                             MEDIAN(CPU) CPU, 
                             MEDIAN(TEMP_DB_RAM) TEMP_DB_RAM, 
@@ -274,7 +289,11 @@ try:
     exit(returnCode)
 
 except Exception as e:
-    message = str(e).replace('%s:%s@%s' % (userName, password, hostName), hostName)
+    message = str(e)
+    a = fail
+    if password and userName:
+        message = message.replace('%s:%s@%s' % (userName, password, hostName), hostName)
+
     if 'unauthorized' in message.lower():
         print('no access to EXAoperation: username or password wrong')
 
