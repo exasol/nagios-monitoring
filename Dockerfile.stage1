@@ -5,7 +5,6 @@ MAINTAINER Exasol AG
 ADD apt-proxy /etc/apt/apt.conf.d
 RUN apt-get -qy update
 RUN apt-get install -qy locales apache2 php7.0 libapache2-mod-php7.0 python3-pip python3-pyodbc unixodbc netcat patch wget ssmtp libdigest-hmac-perl unattended-upgrades apache2-utils cron nagios-plugins nagios-snmp-plugins icingaweb2 icinga2 icinga2-bin mysql-server 
-RUN python3 -m pip install ExasolDatabaseConnector
 
 # debug section
 RUN apt-get -qy install vim less python3-dialog

@@ -1,7 +1,8 @@
 #!/bin/bash
 export PATH="$PATH:/opt/nagios4/bin:/opt/nagios4/sbin:/opt/pnp4nagios/bin"
 chmod u+s /bin/ping /bin/ping6
-
+generate-certificate
+download-odbc-driver
 
 #start services
 sleep "0.5s"; service cron start
