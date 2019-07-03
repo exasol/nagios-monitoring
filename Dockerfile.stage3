@@ -1,0 +1,37 @@
+FROM exasol/monitoring:stage2
+MAINTAINER Exasol AG
+
+# install packages
+ADD apt-proxy /etc/apt/apt.conf.d
+RUN apt-get -qy update
+
+RUN apt-get install -qy locales python3-pip python3-pyodbc python3-yaml curl git
+RUN python3 -m pip install cron_descriptor
+RUN python3 -m pip install jinja2
+RUN rm -rf /usr/bin/python
+RUN ln -s /usr/bin/python3 /usr/bin/python
+RUN apt-get -qy install vim
+
+RUN git clone https://github.com/danielschlieder/yaml2mon /tmp/yaml2mon
+RUN cp -a /tmp/yaml2mon/src/yaml2mon.py /usr/bin
+RUN chmod -v 755 /usr/bin/yaml2mon.py
+RUN mkdir -p /usr/share/yaml2mon
+RUN cp -a /tmp/yaml2mon/src/templates /usr/share/yaml2mon/templates
+
+
+
+# clean up and create entrypoint
+RUN apt-get -yq clean
+ENV TERM=xterm
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/nagios4/bin:/opt/nagios4/sbin:/opt/pnp4nagios/bin"
+RUN localedef -i en_US -f UTF-8 en_US.UTF-8
+
+RUN cp -a /tmp/yaml2mon/testing/default.yaml /etc/icinga2/conf.d/ENV.yaml
+RUN rm -rf /tmp/yaml2mon
+
+ADD etc/dockerinit.stage3 /etc/dockerinit
+WORKDIR /root
+ENTRYPOINT /etc/dockerinit

@@ -1,0 +1,21 @@
+#!/bin/bash
+export PATH="$PATH:/opt/nagios4/bin:/opt/nagios4/sbin:/opt/pnp4nagios/bin"
+
+# convert default ENV (if exists)
+if [ -e "/etc/icinga2/conf.d/ENV.yaml" ]; then
+	python /usr/bin/yaml2mon.py -f /etc/icinga2/conf.d/ENV.yaml --format icinga --write
+	python /usr/bin/yaml2mon.py -f /etc/icinga2/conf.d/ENV.yaml --format icinga -c
+fi
+
+#start services
+sleep "0.5s"; service cron start
+sleep "0.5s"; service mysql start;
+sleep "0.5s"; service icinga2 start;
+#sleep "0.5s"; /opt/pnp4nagios/bin/npcd -d -f /opt/pnp4nagios/etc/npcd.cfg
+sleep "0.5s"; service apache2 start;
+
+# for convinience -- remove after intergration has been comleted
+sleep "0.5s"; service sshd start;
+
+#don't close init process:
+while true; do sleep 120s; done;
