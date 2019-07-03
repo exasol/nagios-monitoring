@@ -73,6 +73,6 @@ ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/nagi
 RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 RUN rm -rf /usr/src/*
 RUN chown www-data:www-data /usr/share/icingaweb2/public -R
-ADD etc/dockerinit /etc/
+ADD etc/dockerinit.stage1 /etc/dockerinit
 WORKDIR /root
-ENTRYPOINT /etc/dockerinit.stage1
+ENTRYPOINT /etc/dockerinit
