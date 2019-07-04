@@ -25,9 +25,6 @@ RUN ln -s /opt/fujitsu/ServerViewSuite/nagios/plugin/fujitsu_server.cfg         
 
 # add further patches
 ADD opt/exasol/patches/* /opt/exasol/patches/
-#RUN ln -s "/opt/exasol/patches/exasol_bg.png" "/opt/nagios4/share/images"
-#RUN cp -f "/opt/exasol/patches/nagios-main.php" "/opt/nagios4/share/main.php"
-#RUN bash -c 'patch -p1 /opt/nagios4/share/stylesheets/common.css < /opt/exasol/patches/nagios-exasol-background.patch'
 RUN bash -c 'patch -p1 /opt/check_hp-2.20/check_hp < /opt/exasol/patches/check_hp_snmpv3_aes.patch'
 RUN bash -c 'patch -p1 /opt/fujitsu/ServerViewSuite/nagios/plugin/check_fujitsu_server.pl < /opt/exasol/patches/check_fujitsu_server_snmpv3_verboselevelfix.patch'
 
@@ -49,8 +46,6 @@ RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 RUN /usr/local/bin/download-odbc-driver
 RUN rm -rf /usr/src/*
 RUN chown www-data:www-data /usr/share/icingaweb2/public -R
-#RUN bash -c 'find /etc/nagios/conf.d -print0 |xargs -0 tar cvzf /etc/nagios/conf.d_dist.tar.gz'
-#RUN bash -c 'find /var/lib/nagios -print0 |xargs -0 tar cvzf /var/lib/nagios_dist.tar.gz'
 ADD etc/dockerinit.stage2 /etc/dockerinit
 WORKDIR /root
 ENTRYPOINT /etc/dockerinit
