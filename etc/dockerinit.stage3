@@ -5,8 +5,6 @@ export PATH="$PATH:/opt/nagios4/bin:/opt/nagios4/sbin:/opt/pnp4nagios/bin"
 if [ -e "/etc/icinga2/conf.d/ENV.yaml" ]; then
 	python /usr/bin/yaml2mon.py -f /etc/icinga2/conf.d/ENV.yaml --format icinga2 --write
 	python /usr/bin/yaml2mon.py -f /etc/icinga2/conf.d/ENV.yaml --format icinga2 -c
-else
-	
 fi
 
 #start services
