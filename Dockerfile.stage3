@@ -31,7 +31,7 @@ RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 
 RUN rm -rf /etc/icinga2/conf.d/*
 RUN cp -a /tmp/yaml2mon/testing/default.yaml /etc/icinga2/conf.d/ENV.yaml
-RUN cp -a /tmp/yaml2mon/etc /etc/yaml2mon
+RUN cp -a /tmp/yaml2mon/etc/yaml2mon /etc/
 RUN rm -rf /tmp/yaml2mon
 RUN rm -rf /etc/icinga2/conf.d/*.conf
 
