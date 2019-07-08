@@ -35,6 +35,7 @@ RUN cp -a /tmp/yaml2mon/etc/yaml2mon /etc/
 RUN rm -rf /tmp/yaml2mon
 RUN rm -rf /etc/icinga2/conf.d/*.conf
 
+ADD usr/share/icinga2/include /usr/share/icinga2/include
 ADD etc/dockerinit.stage3 /etc/dockerinit
 WORKDIR /root
 ENTRYPOINT /etc/dockerinit
