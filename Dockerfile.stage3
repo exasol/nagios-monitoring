@@ -13,11 +13,28 @@ RUN rm -rf /usr/bin/python
 RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN apt-get -qy install vim
 
+# remove icinga2 defaults
+RUN rm -rf /etc/icinga2/conf.d/*.conf
+
+# add yaml2mon
 RUN git clone https://github.com/danielschlieder/yaml2mon /tmp/yaml2mon
-RUN cp -a /tmp/yaml2mon/src/yaml2mon.py /usr/bin
+RUN mv -a /tmp/yaml2mon/src/yaml2mon.py /usr/bin
 RUN chmod -v 755 /usr/bin/yaml2mon.py
-RUN mkdir -p /usr/share/yaml2mon
-RUN cp -a /tmp/yaml2mon/src/templates /usr/share/yaml2mon/templates
+RUN mkdir -p /usr/share/yaml2mon &&  mv  /tmp/yaml2mon/src/templates /usr/share/yaml2mon/templates
+RUN mv /tmp/yaml2mon/etc/yaml2mon /etc/ && rm -rf /tmp/yaml2mon
+
+# Add env converter script (breaks docker build, if non existant environment got supplied)
+ADD scripts/conv.sh /tmp
+RUN /tmp/conv.sh $environment
+
+
+# Add custom check definitions 
+ADD usr/share/icinga2/include /usr/share/icinga2/include
+# Add custom check plugins
+ADD usr/lib/nagios/plugins /usr/lib/nagios/plugins
+# Enable new custom checks
+RUN echo "include <plugins-custom>" >> /etc/icinga2/icinga2.conf
+
 
 
 
@@ -32,20 +49,6 @@ RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 
 
 RUN rm -rf /etc/icinga2/conf.d/*
-RUN cp -a /tmp/yaml2mon/testing/default.yaml /etc/icinga2/conf.d/ENV.yaml
-RUN cp -a /tmp/yaml2mon/etc/yaml2mon /etc/
-RUN rm -rf /tmp/yaml2mon
-RUN rm -rf /etc/icinga2/conf.d/*.conf
-
-RUN echo $environment > /tmp/param.test
-
-# Add custom check definitions 
-ADD usr/share/icinga2/include /usr/share/icinga2/include
-# Add custom check plugins
-ADD usr/lib/nagios/plugins /usr/lib/nagios/plugins
-# Enable new custom checks
-RUN echo "include <plugins-custom>" >> /etc/icinga2/icinga2.conf
-
 
 ADD etc/dockerinit.stage3 /etc/dockerinit
 WORKDIR /root
