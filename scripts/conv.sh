@@ -6,7 +6,7 @@ ENV=$1
 if [[ "$ENV" == "default" ]]; then
 	cp -a /tmp/yaml2mon/testing/default.yaml /etc/icinga2/conf.d/ENV.yaml
 else
-	git clone https://github.com/danielschlieder/environments /tmp/envs 
+	git clone https://github.com/danielschlieder/environments /tmp/envs >/dev/null 2>&1
 	ENV="/tmp/envs/$ENV.yaml"
 	if [[ -e "$ENV" ]]; then
 		cp "$ENV" /etc/icinga2/conf.d/ENV.yaml
