@@ -23,7 +23,6 @@ RUN chmod -v 755 /usr/bin/yaml2mon.py
 RUN mkdir -p /usr/share/yaml2mon 
 RUN mv /tmp/yaml2mon/src/templates /usr/share/yaml2mon/templates
 RUN mv /tmp/yaml2mon/etc/yaml2mon /etc/ 
-RUN rm -rf /tmp/yaml2mon
 
 # Add env converter script (breaks docker build, if non existant environment got supplied)
 ADD scripts/conv.sh /tmp
@@ -41,6 +40,9 @@ RUN echo "include <plugins-custom>" >> /etc/icinga2/icinga2.conf
 
 
 # clean up and create entrypoint
+RUN rm -rf /tmp/yaml2mon
+RUN rm -rf /tmp/envs
+
 RUN apt-get -yq clean
 ENV TERM=xterm
 ENV LC_ALL=en_US.UTF-8
