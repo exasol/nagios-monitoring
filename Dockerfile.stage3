@@ -20,8 +20,10 @@ RUN rm -rf /etc/icinga2/conf.d/*.conf
 RUN git clone https://github.com/danielschlieder/yaml2mon /tmp/yaml2mon
 RUN mv -a /tmp/yaml2mon/src/yaml2mon.py /usr/bin
 RUN chmod -v 755 /usr/bin/yaml2mon.py
-RUN mkdir -p /usr/share/yaml2mon &&  mv  /tmp/yaml2mon/src/templates /usr/share/yaml2mon/templates
-RUN mv /tmp/yaml2mon/etc/yaml2mon /etc/ && rm -rf /tmp/yaml2mon
+RUN mkdir -p /usr/share/yaml2mon 
+RUN mv /tmp/yaml2mon/src/templates /usr/share/yaml2mon/templates
+RUN mv /tmp/yaml2mon/etc/yaml2mon /etc/ 
+RUN rm -rf /tmp/yaml2mon
 
 # Add env converter script (breaks docker build, if non existant environment got supplied)
 ADD scripts/conv.sh /tmp
