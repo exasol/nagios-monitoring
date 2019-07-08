@@ -10,6 +10,7 @@ else
 	ENV="/tmp/envs/$ENV.yaml"
 	if [[ -e "$ENV" ]]; then
 		cp "$ENV" /etc/icinga2/conf.d/ENV.yaml
+		cp -a /tmp/yaml2mon/testing/default.yaml /etc/icinga2/conf.d/ENV.yaml
 		rm -rf /tmp/envs
 	else
 		echo -e "\nGiven Environment $1 not found (as $ENV)\n"
