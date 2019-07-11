@@ -29,15 +29,16 @@ ADD scripts/conv.sh /tmp
 RUN /tmp/conv.sh $environment
 
 
-# Add custom check definitions 
+# Add local (by default provided) custom check definitions 
 ADD usr/share/icinga2/include /usr/share/icinga2/include
 # Add custom check plugins
 ADD usr/lib/nagios/plugins /usr/lib/nagios/plugins
 # Enable new custom checks
 RUN echo "include <plugins-custom>" >> /etc/icinga2/icinga2.conf
 
-
-
+# Add customer check definitions 
+ADD scripts/customer.sh /tmp
+RUN /tmp/customer.sh $environment
 
 # clean up and create entrypoint
 RUN rm -rf /tmp/yaml2mon
