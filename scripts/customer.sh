@@ -30,7 +30,7 @@ if [[ -e "$PENV" ]]; then
 		echo -e "include <plugins-$ENV>" >> /etc/icinga2/icinga2.conf
 	else
 		if [[ "$CHECKS" == "1" ]]; then
-			echo "\nCustomer supplied checks without a definition! Please supply the definition in the /defs folder\n\n" >&2
+			echo -e "\n\nCustomer supplied checks without a definition! Please supply the definition in the /defs folder\n\n" >&2
 			exit 1
 		fi
 	fi
