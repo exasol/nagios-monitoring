@@ -4,11 +4,11 @@ rm -rf /tmp/customer
 ENV=$1
 CHECKS=0
 DEFS=0
-echo -e "\n\n" >&2
+echo -e "\n" >&2
 git clone https://github.com/danielschlieder/customer.git /tmp/customer >/dev/null 2>&1
 PENV="/tmp/customer/$ENV"
 if [[ -e "$PENV" ]]; then
-	echo "###############################################################################" >&2
+	echo "\n\n###############################################################################" >&2
 	echo "Found checks supplied by the customer for environment $ENV" >&2
 	echo "###############################################################################" >&2
 	if [[ -e "$PENV/checks" ]]; then
