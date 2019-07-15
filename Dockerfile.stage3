@@ -16,6 +16,8 @@ RUN apt-get -qy install vim
 # remove icinga2 defaults
 RUN rm -rf /etc/icinga2/conf.d/*.conf
 
+RUN icinga2 api setup
+
 # add yaml2mon
 RUN git clone https://github.com/danielschlieder/yaml2mon /tmp/yaml2mon
 RUN mv /tmp/yaml2mon/src/yaml2mon.py /usr/bin
