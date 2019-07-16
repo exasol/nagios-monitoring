@@ -2,6 +2,7 @@ FROM exasol/monitoring:stage2
 MAINTAINER Exasol AG
 ARG environment=default
 
+
 # install packages
 ADD apt-proxy /etc/apt/apt.conf.d
 RUN apt-get -qy update
@@ -16,8 +17,6 @@ RUN apt-get -qy install vim
 # remove icinga2 defaults
 RUN rm -rf /etc/icinga2/conf.d/*.conf
 
-RUN icinga2 api setup
-
 # add yaml2mon
 RUN git clone https://github.com/danielschlieder/yaml2mon /tmp/yaml2mon
 RUN mv /tmp/yaml2mon/src/yaml2mon.py /usr/bin
@@ -26,10 +25,18 @@ RUN mkdir -p /usr/share/yaml2mon
 RUN mv /tmp/yaml2mon/src/templates /usr/share/yaml2mon/templates
 RUN mv /tmp/yaml2mon/etc/yaml2mon /etc/ 
 
+# Add SSL
+ADD etc/icinga2/pki /etc/icinga2/pki
+RUN chmod 755 -R /etc/icinga2/pki
+ADD var/lib/icinga2/ca /var/lib/icinga2/ca
+
+# Enable API
+RUN icinga2 feature enable api
+ADD etc/icinga2/conf.d/api-users.conf /etc/icinga2/conf.d/api-users.conf
+
 # Add env converter script (breaks docker build, if non existant environment got supplied)
 ADD scripts/conv.sh /tmp
 RUN /tmp/conv.sh $environment
-
 
 # Add local (by default provided) custom check definitions 
 ADD usr/share/icinga2/include /usr/share/icinga2/include
@@ -55,5 +62,6 @@ ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/nagi
 RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 
 ADD etc/dockerinit.stage3 /etc/dockerinit
+
 WORKDIR /root
 ENTRYPOINT /etc/dockerinit
