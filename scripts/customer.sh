@@ -22,12 +22,13 @@ if [[ -e "$PENV" ]]; then
 		echo "-------------------------------------------------------" >&2
 		echo "Copying check definition" >&2
 		echo "-------------------------------------------------------" >&2
-		mkdir -p /usr/share/icinga2/include/plugins-$ENV
-		cp -arv $PENV/defs/* /usr/share/icinga2/include/plugins-$ENV
+		mkdir -p /usr/share/icinga2/include/plugins-$ENV.d
+		cp -arv $PENV/defs/* /usr/share/icinga2/include/plugins-$ENV.d
 		echo "-------------------------------------------------------" >&2
 		echo "Enabling new check definition" >&2
 		echo "-------------------------------------------------------" >&2
 		echo -e "include <plugins-$ENV>" >> /etc/icinga2/icinga2.conf
+		echo -e "include_recursive \"plugins-$ENV.d\"" > /usr/share/icinga2/include/plugins-$ENV
 	else
 		if [[ "$CHECKS" == "1" ]]; then
 			echo -e "\n\nCustomer supplied checks without a definition! Please supply the definition in the /defs folder\n\n" >&2
