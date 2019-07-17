@@ -15,6 +15,7 @@ if [[ -e "$PENV" ]]; then
 		echo "-------------------------------------------------------" >&2
 		echo "Copying checks" >&2
 		echo "-------------------------------------------------------" >&2
+		chmod 755 $PENV/checks/*
 		cp -arv $PENV/checks/* /usr/lib/nagios/plugins
 		CHECKS=1
 	fi 
