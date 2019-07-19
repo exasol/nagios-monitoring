@@ -18,7 +18,8 @@ RUN apt-get -qy install vim
 RUN rm -rf /etc/icinga2/conf.d/*.conf
 
 # add yaml2mon
-RUN git clone https://github.com/danielschlieder/yaml2mon /tmp/yaml2mon
+# Will use my local creds for now needs to be changed in the future
+RUN git clone git://github.exasol.com/bizapps/yaml2mon /tmp/yaml2mon
 RUN mv /tmp/yaml2mon/src/yaml2mon.py /usr/bin
 RUN chmod -v 755 /usr/bin/yaml2mon.py
 RUN mkdir -p /usr/share/yaml2mon 
@@ -26,7 +27,12 @@ RUN mv /tmp/yaml2mon/src/templates /usr/share/yaml2mon/templates
 RUN mv /tmp/yaml2mon/etc/yaml2mon /etc/ 
 
 # Add SSL
+ADD etc/icinga2/constants.conf /etc/icinga2/constants.conf
+RUN sed -i 's/localhost/'$environment'/g' /etc/icinga2/constants.conf
 ADD etc/icinga2/pki /etc/icinga2/pki
+RUN mv /etc/icinga2/pki/localhost.crt /etc/icinga2/pki/$environment.crt
+RUN mv /etc/icinga2/pki/localhost.csr /etc/icinga2/pki/$environment.csr
+RUN mv /etc/icinga2/pki/localhost.key /etc/icinga2/pki/$environment.key
 RUN chmod 755 -R /etc/icinga2/pki
 ADD var/lib/icinga2/ca /var/lib/icinga2/ca
 
