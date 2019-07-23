@@ -27,7 +27,7 @@ RUN mv /tmp/yaml2mon/etc/yaml2mon /etc/
 
 # Add SSL
 ADD etc/icinga2/constants.conf /etc/icinga2/constants.conf
-RUN sed -i 's/localhost/'$environment'/g' /etc/icinga2/constants.conf
+# RUN sed -i 's/localhost/'$environment'/g' /etc/icinga2/constants.conf
 ADD etc/icinga2/pki /etc/icinga2/pki
 RUN cp /etc/icinga2/pki/localhost.crt /etc/icinga2/pki/$environment.crt
 RUN cp /etc/icinga2/pki/localhost.csr /etc/icinga2/pki/$environment.csr
