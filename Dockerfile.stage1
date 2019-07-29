@@ -4,7 +4,6 @@ MAINTAINER Exasol AG
 # install packages
 ADD apt-proxy /etc/apt/apt.conf.d
 RUN apt-get -qy update
-RUN apt-cache search smtp
 
 RUN apt-get install -qy locales apache2 php libapache2-mod-php python3-pip python3-pyodbc unixodbc netcat patch wget esmtp libdigest-hmac-perl unattended-upgrades apache2-utils cron nagios-plugins nagios-snmp-plugins icingaweb2 icinga2 icinga2-bin mariadb-server
 
@@ -58,11 +57,11 @@ RUN /bin/bash -c 'htpasswd -ic /etc/icingaweb2/htpasswd.users icingaadmin <<< "a
 
 
 #configure ssmtp package (security)
-RUN groupadd -r ssmtp
-RUN chown :ssmtp /etc/ssmtp/ssmtp.conf
-RUN chmod 640 /etc/ssmtp/ssmtp.conf
-RUN chown :ssmtp /usr/sbin/ssmtp
-RUN chmod g+s /usr/sbin/ssmtp
+#RUN groupadd -r ssmtp
+#RUN chown :ssmtp /etc/ssmtp/ssmtp.conf
+#RUN chmod 640 /etc/ssmtp/ssmtp.conf
+#RUN chown :ssmtp /usr/sbin/ssmtp
+#RUN chmod g+s /usr/sbin/ssmtp
 
 # clean up and create entrypoint
 RUN apt-get -yq clean
