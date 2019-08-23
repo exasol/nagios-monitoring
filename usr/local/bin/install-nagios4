@@ -1,6 +1,12 @@
 #!/bin/bash
 oldpwd=$PWD
+addgroup --system nagcmd
 adduser --system --no-create-home --home /var/lib/nagios --group --shell /bin/bash nagios
+adduser nagios nagcmd
+adduser nagios nagios
+adduser www-data nagcmd
+adduser www-data nagios
+
 apt-get install -yq build-essential git procps libgd-dev libgd3 unzip && \
 mkdir -p "/etc/nagios" && \
 mkdir -p "/etc/nagios/conf.d" && \
@@ -14,15 +20,15 @@ mkdir -p "/var/lib/nagios/spool/checkresults" && \
 mkdir -p "/var/lib/nagios/rw" && \
 mkdir -p "/var/run/nagios" && \
 chown nagios:nagios "/var/log/nagios" "/var/log/nagios/archives" "/var/cache/nagios" "/var/lib/nagios" "/var/lib/nagios/spool/checkresults" "/var/run/nagios" && \
-chown nagios:www-data "/var/lib/nagios/rw" && \
+chown nagios:nagcmd "/var/lib/nagios/rw" && \
 chmod 2710 "/var/lib/nagios/rw" && \
 chmod 751 "/var/lib/nagios" && \
 cd "/usr/src/nagios4" && \
 rm -rf "/usr/src/nagios4/nagioscore" && \
-git clone https://github.com/NagiosEnterprises/nagioscore && \
+git clone https://github.com/NagiosEnterprises/nagioscore --depth=1 && \
 cd "/usr/src/nagios4/nagioscore" && \
 mkdir -p "/opt/nagios4" && \
-./configure --prefix=/opt/nagios4 && \
+./configure --prefix=/opt/nagios4 --with-nagios-group=nagios --with-command-group=nagcmd && \
 make -j4 all && \
 make fullinstall && \
 mkdir -p "/opt/nagios4/etc" && \

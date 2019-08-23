@@ -5,7 +5,7 @@ mkdir -p "/usr/src/pnp4nagios" && \
 cd "/usr/src" && \
 git clone "https://github.com/lingej/pnp4nagios" && \
 cd "/usr/src/pnp4nagios" && \
-./configure --prefix=/opt/pnp4nagios && \
+./configure --prefix=/opt/pnp4nagios --with-nagios-group=nagios && \
 make all && \
 make install && \
 make install-config && \

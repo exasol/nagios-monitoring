@@ -6,12 +6,12 @@ except ImportError:
 
 setup(
     name='ExasolMonitoringPlugins',
-    version="2019.1",
+    version="2019.7",
     license="MIT",
     maintainer="Exasol AG",
     maintainer_email="support@exasol.com",
     description="Exasol monitoring plugins",
-    long_description="Exasol monitoring plugins for Python >= 3.5",
+    long_description="Exasol monitoring plugins for python >= 3.5",
     url='https://github.com/EXASOL/nagios-monitoring/wiki/Plugin-Descriptions',
     packages=[
         'ExasolMonitoringPlugins'
