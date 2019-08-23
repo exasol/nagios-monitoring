@@ -6,7 +6,9 @@ ADD apt-proxy /etc/apt/apt.conf.d
 ADD etc/apt/sources.list.d/stable.list /etc/apt/sources.list.d/stable.list
 RUN apt-get -qy update
 RUN apt-get -qy full-upgrade
-RUN apt-get install -qy locales lighttpd php-cgi python3-pip python3-pyodbc unixodbc netcat patch wget ssmtp libdigest-hmac-perl unattended-upgrades apache2-utils cron nagios-plugins nagios-snmp-plugins
+RUN apt-get install -qy locales lighttpd php-cgi python3-pip python3-pyodbc unixodbc netcat patch wget libdigest-hmac-perl unattended-upgrades apache2-utils cron nagios-plugins nagios-snmp-plugins
+#no ssmtp at the moment
+
 RUN python3 -m pip install ExasolDatabaseConnector
 
 # debug section
@@ -65,11 +67,11 @@ RUN ln -s /opt/fujitsu/ServerViewSuite/nagios/plugin/check_fujitsu_server.pl    
 RUN ln -s /opt/fujitsu/ServerViewSuite/nagios/plugin/fujitsu_server.cfg         /etc/nagios/conf.d
 
 #configure ssmtp package (security)
-RUN groupadd -r ssmtp
-RUN chown :ssmtp /etc/ssmtp/ssmtp.conf
-RUN chmod 640 /etc/ssmtp/ssmtp.conf
-RUN chown :ssmtp /usr/sbin/ssmtp
-RUN chmod g+s /usr/sbin/ssmtp
+#RUN groupadd -r ssmtp
+#RUN chown :ssmtp /etc/ssmtp/ssmtp.conf
+#RUN chmod 640 /etc/ssmtp/ssmtp.conf
+#RUN chown :ssmtp /usr/sbin/ssmtp
+#RUN chmod g+s /usr/sbin/ssmtp
 
 # add further patches
 ADD opt/exasol/patches/* /opt/exasol/patches/

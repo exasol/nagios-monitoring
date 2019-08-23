@@ -21,6 +21,8 @@ fi;
 if [ $(find "/var/lib/nagios" -type d 2>/dev/null |wc -l) -le 1 ]; then
     chown -v nagios:nagios /var/lib/nagios 2>/dev/null
     find /var/lib/nagios -print0 | xargs -0 chown -v nagios:nagios 2>/dev/null
+    chown nagios:nagcmd /var/lib/nagios/rw 2>/dev/null
+    chmod g+s /var/lib/nagios/rw 2>/dev/null
     tar xvf /var/lib/nagios_dist.tar.gz -C / 2>/dev/null
     if [ $(find "/var/lib/nagios" -type d 2>/dev/null |wc -l) -gt 1 ]; then
         echo "/var/lib/nagios has been recreated"
