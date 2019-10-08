@@ -1,4 +1,4 @@
-FROM exasol/monitoring:stage1
+FROM bizapps_monitor-stage1:latest
 MAINTAINER Exasol AG
 
 # install packages

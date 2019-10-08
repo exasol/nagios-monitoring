@@ -1,4 +1,4 @@
-FROM exasol/monitoring:stage2
+FROM bizapps_monitor-stage2:latest
 MAINTAINER Exasol AG
 ARG environment=default
 
@@ -9,8 +9,7 @@ RUN apt-get -qy update
 RUN apt-get install -qy locales python3-pip python3-pyodbc python3-yaml curl git
 RUN python3 -m pip install cron_descriptor
 RUN python3 -m pip install jinja2
-RUN rm -rf /usr/bin/python
-RUN ln -s /usr/bin/python3 /usr/bin/python
+RUN rm -rf /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python
 RUN apt-get -qy install vim
 
 # remove icinga2 defaults
@@ -25,17 +24,20 @@ RUN mv /tmp/yaml2mon/src/templates /usr/share/yaml2mon/templates
 RUN mv /tmp/yaml2mon/etc/yaml2mon /etc/ 
 
 # Add env converter script (breaks docker build, if non existant environment got supplied)
-ADD scripts/conv.sh /tmp
-RUN /tmp/conv.sh $environment
+#ADD scripts/conv.sh /tmp
+#RUN /tmp/conv.sh $environment
 
 
 # Add custom check definitions 
-ADD usr/share/icinga2/include /usr/share/icinga2/include
+#ADD usr/share/icinga2/include /usr/share/icinga2/include
 # Add custom check plugins
-ADD usr/lib/nagios/plugins /usr/lib/nagios/plugins
+#ADD usr/lib/nagios/plugins /usr/lib/nagios/plugins
 # Enable new custom checks
-RUN echo "include <plugins-custom>" >> /etc/icinga2/icinga2.conf
+#RUN echo "include <plugins-custom>" >> /etc/icinga2/icinga2.conf
 
+# Add customer check definitions 
+#ADD scripts/customer.sh /tmp
+#RUN /tmp/customer.sh $environment
 
 
 
