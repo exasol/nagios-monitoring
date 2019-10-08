@@ -1,0 +1,20 @@
+version: "3.7"
+services:
+  stage1:
+    build:
+      context: .
+      dockerfile: Dockerfile.stage1
+  stage2:
+    build:
+      context: .
+      dockerfile: Dockerfile.stage2
+  stage3:
+    build:
+      context: .
+      dockerfile: Dockerfile.stage3
+  monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        environment: default
